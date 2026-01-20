@@ -1,0 +1,10 @@
+{
+	"id": "sisyphus-engine",
+	"name": "Sisyphus Engine",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "Ruthless Permadeath System",
+	"author": "You",
+	"authorUrl": "",
+	"isDesktopOnly": false
+}
