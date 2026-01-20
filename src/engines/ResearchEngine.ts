@@ -1,4 +1,4 @@
-import { SisyphusSettings, ResearchQuest } from './types';
+import { SisyphusSettings, ResearchQuest } from '../types';
 
 /**
  * DLC 2: Research Quest System Engine

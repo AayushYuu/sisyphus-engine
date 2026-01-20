@@ -1,5 +1,5 @@
 import { TFile } from 'obsidian';
-import { SisyphusSettings, ContextFilter, FilterState, EnergyLevel, QuestContext } from './types';
+import { SisyphusSettings, ContextFilter, FilterState, EnergyLevel, QuestContext } from '../types';
 
 /**
  * DLC 5: Context Filters Engine

@@ -1,4 +1,4 @@
-import { SisyphusSettings, QuestChain, QuestChainRecord } from './types';
+import { SisyphusSettings, QuestChain, QuestChainRecord } from '../types';
 
 /**
  * DLC 4: Quest Chains Engine

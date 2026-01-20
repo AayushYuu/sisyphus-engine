@@ -1,5 +1,5 @@
 import { moment } from 'obsidian';
-import { SisyphusSettings } from './types';
+import { SisyphusSettings } from '../types';
 
 /**
  * DLC 3: Meditation & Recovery Engine

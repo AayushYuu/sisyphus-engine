@@ -1,5 +1,5 @@
 import { moment } from 'obsidian';
-import { SisyphusSettings, DayMetrics, WeeklyReport, BossMilestone, Streak, Achievement } from './types';
+import { SisyphusSettings, DayMetrics, WeeklyReport, BossMilestone, Streak, Achievement } from '../types';
 
 /**
  * DLC 6: Analytics & Endgame Engine
