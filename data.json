@@ -1,15 +1,25 @@
 {
-  "hp": 120,
-  "maxHp": 120,
-  "xp": 130,
-  "gold": 90,
-  "xpReq": 133,
-  "level": 4,
-  "rivalDmg": 20,
+  "hp": 130,
+  "maxHp": 130,
+  "xp": 0,
+  "gold": 280,
+  "xpReq": 160,
+  "level": 6,
+  "rivalDmg": 30,
   "lastLogin": "2026-01-21",
   "shieldedUntil": "2026-01-21T22:44:39.910Z",
   "restDayUntil": "2026-01-21T22:44:42.350Z",
-  "skills": [],
+  "skills": [
+    {
+      "name": "asasas",
+      "level": 1,
+      "xp": 1,
+      "xpReq": 5,
+      "lastUsed": "2026-01-21T11:48:33.875Z",
+      "rust": 0,
+      "connections": []
+    }
+  ],
   "dailyModifier": {
     "name": "Clear Skies",
     "desc": "No effects.",
@@ -99,7 +109,7 @@
     }
   ],
   "dailyMissionDate": "2026-01-21",
-  "questsCompletedToday": 10,
+  "questsCompletedToday": 12,
   "skillUsesToday": {},
   "researchQuests": [
     {
@@ -117,17 +127,31 @@
   ],
   "researchStats": {
     "totalResearch": 1,
-    "totalCombat": 6,
+    "totalCombat": 8,
     "researchCompleted": 1,
     "combatCompleted": 0
   },
-  "lastResearchQuestId": 4,
+  "lastResearchQuestId": 7,
   "meditationCyclesCompleted": 0,
   "questDeletionsToday": 0,
   "lastDeletionReset": "",
   "isMeditating": true,
   "meditationClicksThisLockdown": 5,
-  "activeChains": [],
+  "activeChains": [
+    {
+      "id": "chain_1768996098674",
+      "name": "123",
+      "quests": [
+        "ssasasas",
+        "dsdqqq"
+      ],
+      "currentIndex": 2,
+      "completed": true,
+      "startedAt": "2026-01-21T11:48:18.674Z",
+      "isBoss": false,
+      "completedAt": "2026-01-21T11:48:33.873Z"
+    }
+  ],
   "chainHistory": [
     {
       "chainId": "chain_1768912065946",
@@ -135,10 +159,17 @@
       "totalQuests": 3,
       "completedAt": "2026-01-20T12:27:53.514Z",
       "xpEarned": 0
+    },
+    {
+      "chainId": "chain_1768996098674",
+      "chainName": "123",
+      "totalQuests": 2,
+      "completedAt": "2026-01-21T11:48:33.873Z",
+      "xpEarned": 100
     }
   ],
-  "currentChainId": "",
-  "chainQuestsCompleted": 0,
+  "currentChainId": "chain_1768996098674",
+  "chainQuestsCompleted": 2,
   "questFilters": {},
   "filterState": {
     "activeEnergy": "any",
@@ -148,7 +179,7 @@
   "dayMetrics": [
     {
       "date": "2026-01-21",
-      "questsCompleted": 11,
+      "questsCompleted": 13,
       "questsFailed": 0,
       "xpEarned": 0,
       "goldEarned": 0,

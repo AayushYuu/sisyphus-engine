@@ -33,7 +33,7 @@ const BOSS_DATA: Record<number, { name: string, desc: string, hp_pen: number }> 
 const MISSION_POOL = [
     { id: "morning_win", name: "☀️ Morning Win", desc: "Complete 1 Trivial quest before 10 AM", target: 1, reward: { xp: 0, gold: 15 }, check: "morning_trivial" },
     { id: "momentum", name: "🔥 Momentum", desc: "Complete 3 quests today", target: 3, reward: { xp: 20, gold: 0 }, check: "quest_count" },
-    { id: "zero_inbox", name: "🧘 Zero Inbox", desc: "Process all scraps (0 remaining)", target: 1, reward: { xp: 0, gold: 10 }, check: "zero_scraps" },
+    { id: "zero_inbox", name: "🧘 Zero Inbox", desc: "Complete 1 Trivial Quest", target: 1, reward: { xp: 0, gold: 10 }, check: "morning_trivial" }, // FIXED: Removed impossible check
     { id: "specialist", name: "🎯 Specialist", desc: "Use the same skill 3 times", target: 3, reward: { xp: 15, gold: 0 }, check: "skill_repeat" },
     { id: "high_stakes", name: "💪 High Stakes", desc: "Complete 1 High Stakes quest", target: 1, reward: { xp: 0, gold: 30 }, check: "high_stakes" },
     { id: "speed_demon", name: "⚡ Speed Demon", desc: "Complete quest within 2h of creation", target: 1, reward: { xp: 25, gold: 0 }, check: "fast_complete" },
@@ -144,7 +144,7 @@ export class SisyphusEngine extends TinyEmitter {
             }
         }
         if (this.settings.lastLogin !== today) {
-            this.analyticsEngine.updateStreak();
+            // FIXED: Removed premature updateStreak() from here
             this.settings.maxHp = 100 + (this.settings.level * 5);
             this.settings.hp = Math.min(this.settings.maxHp, this.settings.hp + 20);
             this.settings.damageTakenToday = 0;
@@ -171,8 +171,7 @@ export class SisyphusEngine extends TinyEmitter {
     }
 
     async completeQuest(file: TFile) {
-        this.analyticsEngine.trackDailyMetrics("quest_complete", 1);
-        this.settings.researchStats.totalCombat++;
+        // FIXED: Removed premature metrics tracking from here
         
         if (this.meditationEngine.isLockedDown()) { new Notice("LOCKDOWN ACTIVE"); return; }
         
@@ -190,6 +189,10 @@ export class SisyphusEngine extends TinyEmitter {
              if (chainResult.success && chainResult.message) new Notice(chainResult.message);
         }
 
+        // FIXED: Added metrics tracking here, after validation
+        this.analyticsEngine.trackDailyMetrics("quest_complete", 1);
+        this.settings.researchStats.totalCombat++;
+
         let xp = (fm.xp_reward || 20) * this.settings.dailyModifier.xpMult;
         let gold = (fm.gold_reward || 0) * this.settings.dailyModifier.goldMult;
         const skillName = fm.skill || "None";
@@ -201,7 +204,8 @@ export class SisyphusEngine extends TinyEmitter {
         if (skill) {
             if (skill.rust > 0) {
                 skill.rust = 0;
-                skill.xpReq = Math.floor(skill.xpReq / 1.2); 
+                // FIXED: Rust math corrected to match decay (1.1)
+                skill.xpReq = Math.floor(skill.xpReq / 1.1); 
                 new Notice(`✨ ${skill.name}: Rust Cleared!`);
             }
             skill.lastUsed = new Date().toISOString();
@@ -240,6 +244,9 @@ export class SisyphusEngine extends TinyEmitter {
         }
 
         this.settings.questsCompletedToday++;
+        // FIXED: Added Streak update here (Performance Based)
+        this.analyticsEngine.updateStreak(); 
+        
         const questCreated = fm.created ? new Date(fm.created).getTime() : Date.now();
         const difficulty = this.getDifficultyNumber(fm.difficulty);
         this.checkDailyMissions({ type: "complete", difficulty, skill: skillName, secondarySkill: secondary, highStakes: fm.high_stakes, questCreated });
@@ -280,7 +287,8 @@ export class SisyphusEngine extends TinyEmitter {
             new Notice(`🛡️ SHIELDED!`);
         } else {
             let damage = 10 + Math.floor(this.settings.rivalDmg / 2);
-            if (this.settings.gold < -100) damage *= 2;
+            // FIXED: Strict debt threshold (< 0 instead of < -100)
+            if (this.settings.gold < 0) damage *= 2;
             
             this.settings.hp -= damage;
             this.settings.damageTakenToday += damage;
@@ -333,6 +341,8 @@ export class SisyphusEngine extends TinyEmitter {
         
         const safeName = name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
         const filename = `${questsPath}/${safeName}.md`;
+        
+        // FIXED: High Stakes saved as 'true'/'false' string for Obsidian compatibility
         const content = `---
 type: quest
 status: active
@@ -342,7 +352,7 @@ xp_reward: ${xpReward}
 gold_reward: ${goldReward}
 skill: ${skill}
 secondary_skill: ${secSkill}
-high_stakes: ${highStakes}
+high_stakes: ${highStakes ? 'true' : 'false'}
 is_boss: ${isBoss}
 created: ${new Date().toISOString()}
 ${deadlineFrontmatter}
@@ -358,9 +368,6 @@ ${deadlineFrontmatter}
         this.audio.playSound("click"); 
         this.save();
     }
-    
-    // ... (rest of methods: deleteQuest, checkDeadlines, triggerDeath, rollChaos, attemptRecovery, isLockedDown, isResting, isShielded, taunt, parseQuickInput)
-    // For brevity, we assume standard implementation below. But since this is a "rewrite" script, I MUST include them to avoid breaking the file.
     
     async deleteQuest(file: TFile) { await this.app.vault.delete(file); new Notice("Deployment Aborted (Deleted)"); this.save(); }
 
@@ -378,8 +385,6 @@ ${deadlineFrontmatter}
              const f = this.app.vault.getAbstractFileByPath(`Active_Run/Quests/BOSS_LVL10 - ${BOSS_DATA[10].name}.md`);
              if (!f) { new Notice("You cannot hide from the Gatekeeper."); await this.spawnBoss(10); }
         }
-        // (Scales to other levels if needed, simple check for LVL 10 first)
-
         this.save();
     }
 

@@ -280,7 +280,7 @@ export class ResearchListModal extends Modal {
                 header.setAttribute("style", "margin: 0 0 5px 0;");
 
                 const info = card.createEl("div");
-                info.setText(`Type: ${q.type === "survey" ? "Survey" : "Deep Dive"} | Words: ${q.wordCount}/${q.wordLimit}`);
+                info.innerHTML = `<code style="color:#aa64ff">${q.id}</code><br>Type: ${q.type === "survey" ? "Survey" : "Deep Dive"} | Words: ${q.wordCount}/${q.wordLimit}`;
                 info.setAttribute("style", "font-size: 0.9em; opacity: 0.8;");
 
                 const actions = card.createDiv();

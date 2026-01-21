@@ -53,6 +53,9 @@ export default class SisyphusPlugin extends Plugin {
         this.registerView(VIEW_TYPE_PANOPTICON, (leaf) => new PanopticonView(leaf, this));
 
         this.statusBarItem = this.addStatusBarItem();
+        // [AUTO-FIX] Expose for debug
+        (window as any).sisyphusEngine = this.engine;
+        
         await this.engine.checkDailyLogin();
         this.updateStatusBar();
 
@@ -150,6 +153,16 @@ export default class SisyphusPlugin extends Plugin {
 
         this.addRibbonIcon('skull', 'Sisyphus Sidebar', () => this.activateView());
         this.registerInterval(window.setInterval(() => this.engine.checkDeadlines(), 60000));
+        
+        // [AUTO-FIX] Research Word Counter
+        this.registerEvent(this.app.workspace.on('editor-change', (editor, info) => {
+            if (!info || !info.file) return;
+            const cache = this.app.metadataCache.getFileCache(info.file);
+            if (cache?.frontmatter?.research_id) {
+                const words = editor.getValue().trim().split(/\s+/).length;
+                this.engine.updateResearchWordCount(cache.frontmatter.research_id, words);
+            }
+        }));
     }
 
     async loadStyles() {

@@ -261,6 +261,7 @@ export class PanopticonView extends ItemView {
                 const typeLabel = header.createEl("span", { text: quest.type === "survey" ? "SURVEY" : "DEEP DIVE" });
                 typeLabel.setAttribute("style", "font-size: 0.75em; padding: 2px 6px; background: rgba(170, 100, 255, 0.3); border-radius: 2px;");
 
+                card.createEl("div", { text: `ID: ${quest.id}` }).setAttribute("style", "font-family:monospace; font-size:0.8em; color:#aa64ff; opacity:0.8; margin-bottom:4px;");
                 const wordCount = card.createEl("p", { text: `Words: ${quest.wordCount}/${quest.wordLimit}` });
                 wordCount.setAttribute("style", "margin: 5px 0; font-size: 0.85em;");
 
@@ -307,7 +308,8 @@ export class PanopticonView extends ItemView {
         const folder = this.app.vault.getAbstractFileByPath("Active_Run/Quests");
         let count = 0;
         if (folder instanceof TFolder) {
-            const files = folder.children.filter(f => f instanceof TFile) as TFile[];
+            let files = folder.children.filter(f => f instanceof TFile) as TFile[];
+            files = this.plugin.engine.filtersEngine.filterQuests(files) as TFile[]; // [AUTO-FIX] Apply filters
             files.sort((a, b) => {
                 const fmA = this.app.metadataCache.getFileCache(a)?.frontmatter;
                 const fmB = this.app.metadataCache.getFileCache(b)?.frontmatter;
