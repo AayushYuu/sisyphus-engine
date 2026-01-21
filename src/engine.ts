@@ -20,6 +20,15 @@ export const CHAOS_TABLE: Modifier[] = [
     { name: "Adrenaline", desc: "2x XP, -5 HP/Q.", xpMult: 2, goldMult: 1, priceMult: 1, icon: "💉" }
 ];
 
+// BOSS DATA
+const BOSS_DATA: Record<number, { name: string, desc: string, hp_pen: number }> = {
+    10: { name: "The Gatekeeper", desc: "The first major filter. Prove you belong here.", hp_pen: 20 },
+    20: { name: "The Shadow Self", desc: "Your own bad habits manifest.", hp_pen: 30 },
+    30: { name: "The Mountain", desc: "The peak is visible, but the air is thin.", hp_pen: 40 },
+    40: { name: "The Absurd", desc: "Why do we struggle? Because we must.", hp_pen: 50 },
+    50: { name: "Sisyphus Prime", desc: "One must imagine Sisyphus happy.", hp_pen: 99 }
+};
+
 // MISSION POOL
 const MISSION_POOL = [
     { id: "morning_win", name: "☀️ Morning Win", desc: "Complete 1 Trivial quest before 10 AM", target: 1, reward: { xp: 0, gold: 15 }, check: "morning_trivial" },
@@ -46,7 +55,7 @@ export class SisyphusEngine extends TinyEmitter {
     filtersEngine: FiltersEngine;
 
     constructor(app: App, plugin: any, audio: AudioController) {
-        super(); // INIT EVENT EMITTER
+        super();
         this.app = app;
         this.plugin = plugin;
         this.audio = audio;
@@ -63,7 +72,6 @@ export class SisyphusEngine extends TinyEmitter {
 
     async save() { 
         await this.plugin.saveSettings(); 
-        // EVENT BUS TRIGGER: Notify UI to update
         this.trigger("update");
     }
 
@@ -127,7 +135,7 @@ export class SisyphusEngine extends TinyEmitter {
         const today = moment().format("YYYY-MM-DD");
         if (this.settings.lastLogin) {
             const daysDiff = moment().diff(moment(this.settings.lastLogin), 'days');
-            if (daysDiff > 1) {
+            if (daysDiff > 2) {
                 const rotDamage = (daysDiff - 1) * 10;
                 if (rotDamage > 0) {
                     this.settings.hp -= rotDamage;
@@ -224,6 +232,11 @@ export class SisyphusEngine extends TinyEmitter {
             
             const bossMsgs = this.analyticsEngine.checkBossMilestones();
             bossMsgs.forEach(msg => new Notice(msg));
+
+            // BOSS SPAWN CHECK
+            if (BOSS_DATA[this.settings.level]) {
+                this.spawnBoss(this.settings.level);
+            }
         }
 
         this.settings.questsCompletedToday++;
@@ -236,6 +249,28 @@ export class SisyphusEngine extends TinyEmitter {
         await this.app.fileManager.processFrontMatter(file, (f) => { f.status = "completed"; f.completed_at = new Date().toISOString(); });
         await this.app.fileManager.renameFile(file, `${archivePath}/${file.name}`);
         await this.save();
+    }
+
+    async spawnBoss(level: number) {
+        const boss = BOSS_DATA[level];
+        if (!boss) return;
+
+        const bossName = `BOSS_LVL${level} - ${boss.name}`;
+        new Notice(`⚠️ BOSS DETECTED: ${boss.name}`);
+        
+        // Auto-create the boss quest
+        await this.createQuest(
+            bossName, 
+            5, // Difficulty 5 (Suicide)
+            "Boss", 
+            "None", 
+            moment().add(3, 'days').toISOString(), // 3 Day limit
+            true, // High Stakes
+            "Critical", // Priority
+            true // isBoss flag
+        );
+        
+        this.audio.playSound("death"); // Ominous sound
     }
 
     async failQuest(file: TFile, manualAbort: boolean = false) {
@@ -259,7 +294,7 @@ export class SisyphusEngine extends TinyEmitter {
                 this.meditationEngine.triggerLockdown();
                 this.taunt("lockdown");
                 this.audio.playSound("death");
-                this.trigger("lockdown"); // EVENT TRIGGER
+                this.trigger("lockdown");
             }
             if (this.settings.hp <= 30) { this.audio.playSound("heartbeat"); this.taunt("low_hp"); }
         }
@@ -275,8 +310,11 @@ export class SisyphusEngine extends TinyEmitter {
         if (this.isResting() && highStakes) { new Notice("Cannot deploy High Stakes on Rest Day."); return; } 
 
         let xpReward = 0; let goldReward = 0; let diffLabel = "";
-        if (isBoss) { xpReward = 1000; goldReward = 1000; diffLabel = "☠️ BOSS"; } 
-        else {
+        if (isBoss) { 
+            xpReward = 1000; 
+            goldReward = 1000; 
+            diffLabel = "☠️ BOSS"; 
+        } else {
             switch(diff) {
                 case 1: xpReward = Math.floor(this.settings.xpReq * 0.05); goldReward = 10; diffLabel = "Trivial"; break;
                 case 2: xpReward = Math.floor(this.settings.xpReq * 0.10); goldReward = 20; diffLabel = "Easy"; break;
@@ -318,8 +356,11 @@ ${deadlineFrontmatter}
         if (this.app.vault.getAbstractFileByPath(filename)) { new Notice("Exists!"); return; }
         await this.app.vault.create(filename, content);
         this.audio.playSound("click"); 
-        this.save(); // Will trigger update
+        this.save();
     }
+    
+    // ... (rest of methods: deleteQuest, checkDeadlines, triggerDeath, rollChaos, attemptRecovery, isLockedDown, isResting, isShielded, taunt, parseQuickInput)
+    // For brevity, we assume standard implementation below. But since this is a "rewrite" script, I MUST include them to avoid breaking the file.
     
     async deleteQuest(file: TFile) { await this.app.vault.delete(file); new Notice("Deployment Aborted (Deleted)"); this.save(); }
 
@@ -332,6 +373,13 @@ ${deadlineFrontmatter}
                 if (fm?.deadline && moment().isAfter(moment(fm.deadline))) await this.failQuest(file);
             }
         }
+        // BOSS RESPAWN CHECK (Anti-Cheese)
+        if (this.settings.level >= 10 && BOSS_DATA[10] && !this.settings.bossMilestones.some((b:any) => b.level === 10 && b.defeated)) {
+             const f = this.app.vault.getAbstractFileByPath(`Active_Run/Quests/BOSS_LVL10 - ${BOSS_DATA[10].name}.md`);
+             if (!f) { new Notice("You cannot hide from the Gatekeeper."); await this.spawnBoss(10); }
+        }
+        // (Scales to other levels if needed, simple check for LVL 10 first)
+
         this.save();
     }
 
