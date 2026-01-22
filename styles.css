@@ -1511,3 +1511,84 @@
     border-color: #ffc800;
     color: #ffc800;
 }
+
+
+/* === DLC 6: VICTORY & DEBT VISUALS === */
+
+/* Debt Siren Animation */
+@keyframes siren-pulse {
+    0% { background: rgba(255, 85, 85, 0.1); border-color: #ff5555; }
+    50% { background: rgba(255, 85, 85, 0.25); border-color: #ff0000; box-shadow: 0 0 15px rgba(255, 0, 0, 0.3); }
+    100% { background: rgba(255, 85, 85, 0.1); border-color: #ff5555; }
+}
+
+.sisy-alert-debt {
+    animation: siren-pulse 2s infinite;
+    border-left: 4px solid #ff5555;
+}
+
+.sisy-alert-debt h3 {
+    color: #ff5555;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Victory Modal Styling */
+.sisy-victory-modal {
+    text-align: center;
+    border: 2px solid #ffd700;
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(50,50,20,0.9) 100%);
+}
+
+.sisy-victory-title {
+    font-size: 2.5em;
+    color: #ffd700;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.sisy-victory-stat {
+    font-size: 1.2em;
+    margin: 10px 0;
+    color: #e0e0e0;
+}
+
+.sisy-victory-highlight {
+    color: #ffd700;
+    font-weight: bold;
+}
+
+/* === MOBILE RESPONSIVENESS === */
+@media (max-width: 768px) {
+    /* Stack the HUD grid */
+    .sisy-hud {
+        grid-template-columns: 1fr !important; 
+    }
+
+    /* Stack buttons */
+    .sisy-controls {
+        flex-direction: column;
+    }
+
+    /* Adjust font sizes */
+    .sisy-header {
+        font-size: 1.2em;
+    }
+
+    .sisy-stat-val {
+        font-size: 1.4em;
+    }
+
+    /* Make touch targets larger */
+    .sisy-btn, .sisy-action-btn, .sisy-card {
+        padding: 12px;
+        min-height: 44px; /* Apple Human Interface Guidelines */
+    }
+    
+    .sisy-trash {
+        padding: 10px; /* Easier to tap delete */
+    }
+}

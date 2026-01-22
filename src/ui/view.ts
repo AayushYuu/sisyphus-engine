@@ -29,7 +29,19 @@ export class PanopticonView extends ItemView {
 
         // --- 1. HEADER & CRITICAL ALERTS ---
         scroll.createEl("h2", { text: "Eye SISYPHUS OS", cls: "sisy-header" });
-        
+       // [NEW] DEBT WARNING
+        if (this.plugin.settings.gold < 0) {
+            const d = scroll.createDiv({ cls: "sisy-alert sisy-alert-debt" });
+            d.createEl("h3", { text: "⚠️ DEBT CRISIS ACTIVE" });
+            d.createEl("p", { text: "ALL DAMAGE RECEIVED IS DOUBLED." });
+            
+            // [FIXED] style moved to attr
+            d.createEl("p", { 
+                text: `Current Balance: ${this.plugin.settings.gold}g`, 
+                attr: { style: "font-weight:bold" } 
+            });
+        } 
+
         if(this.plugin.engine.isLockedDown()) {
             const l = scroll.createDiv({ cls: "sisy-alert sisy-alert-lockdown" });
             l.createEl("h3", { text: "LOCKDOWN ACTIVE" });

@@ -386,3 +386,58 @@ export class ChainBuilderModal extends Modal {
         this.contentEl.empty();
     }
 }
+
+export class VictoryModal extends Modal {
+    plugin: SisyphusPlugin;
+    
+    constructor(app: App, plugin: SisyphusPlugin) {
+        super(app);
+        this.plugin = plugin;
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.addClass("sisy-victory-modal");
+
+        // Epic Title
+        contentEl.createEl("h1", { text: "ASCENSION ACHIEVED", cls: "sisy-victory-title" });
+        
+        // [FIXED] style moved to attr
+        contentEl.createEl("div", { text: "🏆", attr: { style: "font-size: 60px; margin: 20px 0;" } });
+
+        // Stats Container
+        const stats = contentEl.createDiv();
+        const legacy = this.plugin.settings.legacy;
+        const metrics = this.plugin.engine.getGameStats();
+
+        this.statLine(stats, "Final Level", "50");
+        this.statLine(stats, "Total Quests", `${metrics.totalQuests}`);
+        this.statLine(stats, "Deaths Endured", `${legacy.deathCount}`);
+        this.statLine(stats, "Longest Streak", `${metrics.longestStreak} days`);
+
+        // Message
+        // [FIXED] style moved to attr
+        const msg = contentEl.createEl("p", { 
+            text: "One must imagine Sisyphus happy. You have pushed the boulder to the peak.",
+            attr: { style: "margin: 30px 0; font-style: italic; opacity: 0.8;" }
+        });
+
+        // Continue Button
+        const btn = contentEl.createEl("button", { text: "BEGIN NEW GAME+" });
+        btn.addClass("mod-cta");
+        btn.style.width = "100%";
+        btn.onclick = () => {
+            this.close();
+            // Optional: Trigger Prestige/New Game+ logic here if desired
+        };
+    }
+
+    statLine(el: HTMLElement, label: string, val: string) {
+        const line = el.createDiv({ cls: "sisy-victory-stat" });
+        line.innerHTML = `${label}: <span class="sisy-victory-highlight">${val}</span>`;
+    }
+
+    onClose() {
+        this.contentEl.empty();
+    }
+}

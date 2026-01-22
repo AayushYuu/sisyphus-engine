@@ -1,25 +1,15 @@
 {
-  "hp": 130,
-  "maxHp": 130,
+  "hp": 105,
+  "maxHp": 105,
   "xp": 0,
-  "gold": 280,
-  "xpReq": 160,
-  "level": 6,
-  "rivalDmg": 30,
-  "lastLogin": "2026-01-21",
-  "shieldedUntil": "2026-01-21T22:44:39.910Z",
-  "restDayUntil": "2026-01-21T22:44:42.350Z",
-  "skills": [
-    {
-      "name": "asasas",
-      "level": 1,
-      "xp": 1,
-      "xpReq": 5,
-      "lastUsed": "2026-01-21T11:48:33.875Z",
-      "rust": 0,
-      "connections": []
-    }
-  ],
+  "gold": 0,
+  "xpReq": 100,
+  "level": 1,
+  "rivalDmg": 10,
+  "lastLogin": "2026-01-22",
+  "shieldedUntil": "",
+  "restDayUntil": "",
+  "skills": [],
   "dailyModifier": {
     "name": "Clear Skies",
     "desc": "No effects.",
@@ -39,31 +29,10 @@
     "deathCount": 0
   },
   "muted": false,
-  "history": [
-    {
-      "date": "",
-      "status": "skip",
-      "xpEarned": 0
-    },
-    {
-      "date": "2026-01-19",
-      "status": "success",
-      "xpEarned": 0
-    },
-    {
-      "date": "2026-01-20",
-      "status": "success",
-      "xpEarned": 0
-    },
-    {
-      "date": "2026-01-21",
-      "status": "success",
-      "xpEarned": 0
-    }
-  ],
+  "history": [],
   "runCount": 1,
   "lockdownUntil": "",
-  "damageTakenToday": 57,
+  "damageTakenToday": 0,
   "dailyMissions": [
     {
       "id": "speed_demon",
@@ -76,8 +45,22 @@
       },
       "check": "fast_complete",
       "checkFunc": "fast_complete",
-      "progress": 1,
-      "completed": true
+      "progress": 0,
+      "completed": false
+    },
+    {
+      "id": "survivor",
+      "name": "🛡️ Survivor",
+      "desc": "Don't take any damage today",
+      "target": 1,
+      "reward": {
+        "xp": 0,
+        "gold": 20
+      },
+      "check": "no_damage",
+      "checkFunc": "no_damage",
+      "progress": 0,
+      "completed": false
     },
     {
       "id": "synergist",
@@ -92,170 +75,37 @@
       "checkFunc": "synergy",
       "progress": 0,
       "completed": false
-    },
-    {
-      "id": "morning_win",
-      "name": "☀️ Morning Win",
-      "desc": "Complete 1 Trivial quest before 10 AM",
-      "target": 1,
-      "reward": {
-        "xp": 0,
-        "gold": 15
-      },
-      "check": "morning_trivial",
-      "checkFunc": "morning_trivial",
-      "progress": 0,
-      "completed": false
     }
   ],
-  "dailyMissionDate": "2026-01-21",
-  "questsCompletedToday": 12,
+  "dailyMissionDate": "2026-01-22",
+  "questsCompletedToday": 0,
   "skillUsesToday": {},
-  "researchQuests": [
-    {
-      "id": "research_2",
-      "title": "sdnsd",
-      "type": "deep_dive",
-      "linkedSkill": "None",
-      "wordLimit": 400,
-      "wordCount": 400,
-      "linkedCombatQuest": "None",
-      "createdAt": "2026-01-20T22:58:47.825Z",
-      "completed": true,
-      "completedAt": "2026-01-20T23:00:55.631Z"
-    }
-  ],
+  "researchQuests": [],
   "researchStats": {
-    "totalResearch": 1,
-    "totalCombat": 8,
-    "researchCompleted": 1,
+    "totalResearch": 0,
+    "totalCombat": 0,
+    "researchCompleted": 0,
     "combatCompleted": 0
   },
-  "lastResearchQuestId": 7,
+  "lastResearchQuestId": 0,
   "meditationCyclesCompleted": 0,
   "questDeletionsToday": 0,
   "lastDeletionReset": "",
-  "isMeditating": true,
-  "meditationClicksThisLockdown": 5,
-  "activeChains": [
-    {
-      "id": "chain_1768996098674",
-      "name": "123",
-      "quests": [
-        "ssasasas",
-        "dsdqqq"
-      ],
-      "currentIndex": 2,
-      "completed": true,
-      "startedAt": "2026-01-21T11:48:18.674Z",
-      "isBoss": false,
-      "completedAt": "2026-01-21T11:48:33.873Z"
-    }
-  ],
-  "chainHistory": [
-    {
-      "chainId": "chain_1768912065946",
-      "chainName": "sdd",
-      "totalQuests": 3,
-      "completedAt": "2026-01-20T12:27:53.514Z",
-      "xpEarned": 0
-    },
-    {
-      "chainId": "chain_1768996098674",
-      "chainName": "123",
-      "totalQuests": 2,
-      "completedAt": "2026-01-21T11:48:33.873Z",
-      "xpEarned": 100
-    }
-  ],
-  "currentChainId": "chain_1768996098674",
-  "chainQuestsCompleted": 2,
+  "isMeditating": false,
+  "meditationClicksThisLockdown": 0,
+  "activeChains": [],
+  "chainHistory": [],
+  "currentChainId": "",
+  "chainQuestsCompleted": 0,
   "questFilters": {},
   "filterState": {
     "activeEnergy": "any",
     "activeContext": "any",
     "activeTags": []
   },
-  "dayMetrics": [
-    {
-      "date": "2026-01-21",
-      "questsCompleted": 13,
-      "questsFailed": 0,
-      "xpEarned": 0,
-      "goldEarned": 0,
-      "damagesTaken": 0,
-      "skillsLeveled": [],
-      "chainsCompleted": 0
-    }
-  ],
-  "weeklyReports": [
-    {
-      "week": 4,
-      "startDate": "2026-01-18",
-      "endDate": "2026-01-24",
-      "totalQuests": 0,
-      "successRate": 0,
-      "totalXp": 0,
-      "totalGold": 0,
-      "topSkills": [],
-      "bestDay": "2026-01-18",
-      "worstDay": "2026-01-18"
-    },
-    {
-      "week": 4,
-      "startDate": "2026-01-18",
-      "endDate": "2026-01-24",
-      "totalQuests": 0,
-      "successRate": 0,
-      "totalXp": 0,
-      "totalGold": 0,
-      "topSkills": [],
-      "bestDay": "2026-01-18",
-      "worstDay": "2026-01-18"
-    },
-    {
-      "week": 4,
-      "startDate": "2026-01-18",
-      "endDate": "2026-01-24",
-      "totalQuests": 4,
-      "successRate": 100,
-      "totalXp": 0,
-      "totalGold": 0,
-      "topSkills": [],
-      "bestDay": "2026-01-21",
-      "worstDay": "2026-01-21"
-    }
-  ],
-  "bossMilestones": [
-    {
-      "level": 10,
-      "name": "The First Trial",
-      "unlocked": false,
-      "defeated": false,
-      "xpReward": 500
-    },
-    {
-      "level": 20,
-      "name": "The Nemesis Returns",
-      "unlocked": false,
-      "defeated": false,
-      "xpReward": 1000
-    },
-    {
-      "level": 30,
-      "name": "The Reaper Awakens",
-      "unlocked": false,
-      "defeated": false,
-      "xpReward": 1500
-    },
-    {
-      "level": 50,
-      "name": "The Final Ascension",
-      "unlocked": false,
-      "defeated": false,
-      "xpReward": 5000
-    }
-  ],
+  "dayMetrics": [],
+  "weeklyReports": [],
+  "bossMilestones": [],
   "streak": {
     "current": 0,
     "longest": 0,
