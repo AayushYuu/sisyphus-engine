@@ -1,1594 +1,180 @@
-/* SISYPHUS DLC 1 - CORE UX UPGRADE */
-
 :root {
-    --sisy-dark: #1a1a1a;
-    --sisy-darker: #0f0f0f;
-    --sisy-text: #e0e0e0;
+    --sisy-purple: #aa64ff;
     --sisy-red: #ff5555;
-    --sisy-orange: #ff9944;
     --sisy-green: #55ff55;
+    --sisy-green-dim: #4caf50;
     --sisy-blue: #00b0ff;
-    --sisy-purple: #aa55ff;
-    --sisy-gold: #ffd700;
-    --sisy-border: #333;
+    --sisy-gold: #ffc107;
+    --sisy-bg-dim: rgba(255, 255, 255, 0.03);
+    --sisy-bg-glass: rgba(20, 20, 20, 0.6);
+    --sisy-border: rgba(255, 255, 255, 0.1);
 }
 
-/* === CONTAINER & SCROLL === */
-.sisy-container {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    background: var(--sisy-dark);
-    color: var(--sisy-text);
-    font-family: 'Courier New', monospace;
-    overflow: hidden;
-}
+/* === LAYOUT & SCROLL === */
+.sisy-container { height: 100%; display: flex; flex-direction: column; background: var(--background-primary); }
+/* [FIX] Removed scroll-behavior to kill yo-yo */
+.sisy-scroll-area { padding: 15px; overflow-y: auto; flex: 1; }
 
-.sisy-scroll-area {
-    flex: 1;
-    overflow-y: auto;
-    padding: 15px;
-    gap: 15px;
-    display: flex;
-    flex-direction: column;
-}
-
-.sisy-scroll-area::-webkit-scrollbar {
-    width: 8px;
-}
-
-.sisy-scroll-area::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.sisy-scroll-area::-webkit-scrollbar-thumb {
-    background: var(--sisy-border);
-    border-radius: 4px;
-}
-
-.sisy-scroll-area::-webkit-scrollbar-thumb:hover {
-    background: var(--sisy-blue);
-}
+/* Custom Scrollbar */
+.sisy-scroll-area::-webkit-scrollbar { width: 6px; }
+.sisy-scroll-area::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; opacity: 0.2; }
+.sisy-scroll-area::-webkit-scrollbar-track { background: transparent; }
 
 /* === HEADER === */
-.sisy-header {
-    margin: 0;
-    font-size: 1.4em;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: var(--sisy-blue);
-    border-bottom: 2px solid var(--sisy-border);
-    padding-bottom: 10px;
-}
+.sisy-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--sisy-border); }
+.sisy-header h2 { margin: 0; font-size: 1.1em; letter-spacing: 1px; color: var(--text-normal); text-transform: uppercase; }
+.sisy-sound-btn { font-size: 1.2em; cursor: pointer; opacity: 0.7; transition: opacity 0.2s; }
+.sisy-sound-btn:hover { opacity: 1; }
 
-/* === ALERTS (DLC 1) === */
-.sisy-alert {
-    border-left: 4px solid;
-    border-radius: 4px;
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.05);
-    margin-bottom: 10px;
-}
+/* === SECTIONS === */
+.sisy-section-title { margin: 25px 0 10px 0; font-size: 0.75em; letter-spacing: 1.5px; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--sisy-border); padding-bottom: 5px; }
+.sisy-empty-state { padding: 30px; text-align: center; color: var(--text-muted); font-style: italic; border: 1px dashed var(--sisy-border); border-radius: 6px; background: var(--sisy-bg-dim); }
 
-.sisy-alert h3 {
-    margin: 0 0 8px 0;
-    font-size: 1.1em;
-}
+/* === ALERTS === */
+.sisy-alert { padding: 12px; margin-bottom: 12px; border-left: 3px solid var(--text-normal); background: var(--sisy-bg-dim); border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+.sisy-alert h3 { margin: 0 0 5px 0; font-size: 0.95em; }
+.sisy-alert-row { display: flex; justify-content: space-between; font-size: 0.9em; margin-top: 4px; align-items: center; }
+.sisy-alert-timer { font-family: monospace; opacity: 0.8; }
+.sisy-alert-buff { border-left-color: var(--sisy-purple); background: linear-gradient(90deg, rgba(170, 85, 255, 0.1), transparent); }
+.sisy-alert-debt { border-left-color: var(--sisy-red); background: linear-gradient(90deg, rgba(255, 85, 85, 0.1), transparent); }
 
-.sisy-alert p {
-    margin: 0;
-    font-size: 0.9em;
-    opacity: 0.8;
-}
-
-.sisy-alert-lockdown {
-    border-left-color: var(--sisy-red);
-    background: rgba(255, 85, 85, 0.1);
-}
-
-.sisy-alert-lockdown h3 {
-    color: var(--sisy-red);
-    animation: pulse-red 1.5s infinite;
-}
-
-.sisy-alert-rest {
-    border-left-color: var(--sisy-green);
-    background: rgba(85, 255, 85, 0.1);
-}
-
-.sisy-alert-rest h3 {
-    color: var(--sisy-green);
-}
-
-@keyframes pulse-red {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
-}
-
-/* === HUD GRID (2x2) === */
-.sisy-hud {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-.sisy-stat-box {
-    border: 1px solid var(--sisy-border);
-    border-radius: 4px;
-    padding: 12px;
-    background: rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
-}
-
-.sisy-stat-box:hover {
-    border-color: var(--sisy-blue);
-    background: rgba(0, 176, 255, 0.05);
-}
-
-.sisy-stat-label {
-    font-size: 0.75em;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #aaa;
-    margin-bottom: 6px;
-}
-
-.sisy-stat-val {
-    font-size: 1.5em;
-    font-weight: bold;
-    color: var(--sisy-text);
-}
-
-.sisy-stat-box.sisy-critical {
-    border-color: var(--sisy-red);
-    background: rgba(255, 85, 85, 0.1);
-}
-
-.sisy-stat-box.sisy-critical .sisy-stat-val {
-    color: var(--sisy-red);
-    animation: pulse-red 1s infinite;
-}
-
-.sisy-val-debt {
-    border-color: var(--sisy-orange) !important;
-    background: rgba(255, 153, 68, 0.1) !important;
-}
-
-.sisy-val-debt .sisy-stat-val {
-    color: var(--sisy-orange) !important;
-}
+/* === HUD === */
+.sisy-hud { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+.sisy-stat-box { border: 1px solid var(--sisy-border); padding: 12px; border-radius: 6px; text-align: center; background: var(--sisy-bg-dim); transition: transform 0.2s; }
+.sisy-stat-box:hover { transform: translateY(-2px); border-color: var(--text-muted); }
+.sisy-stat-label { font-size: 0.7em; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+.sisy-stat-val { font-size: 1.4em; font-weight: 800; color: var(--text-normal); font-family: var(--font-monospace); }
+.sisy-critical .sisy-stat-val { color: var(--sisy-red); animation: pulse-red 2s infinite; }
+.sisy-val-debt .sisy-stat-val { color: var(--sisy-gold); }
 
 /* === ORACLE === */
-.sisy-oracle {
+.sisy-oracle { text-align: center; padding: 15px; background: var(--sisy-bg-dim); border-radius: 6px; margin-bottom: 20px; border: 1px solid var(--sisy-border); }
+.sisy-oracle h4 { margin: 0 0 8px 0; font-size: 0.8em; color: var(--text-muted); letter-spacing: 1px; }
+.sisy-prediction { font-size: 1.1em; font-weight: bold; }
+.sisy-prediction-bad { color: var(--sisy-red); text-shadow: 0 0 10px rgba(255, 85, 85, 0.3); }
+
+/* === CARDS === */
+.sisy-card, .sisy-mission-card, .sisy-research-card, .sisy-chain-container {
     border: 1px solid var(--sisy-border);
-    border-radius: 4px;
     padding: 12px;
-    background: rgba(170, 85, 255, 0.05);
     margin-bottom: 10px;
+    border-radius: 6px;
+    background: var(--background-secondary);
+    transition: all 0.2s ease;
 }
+.sisy-card:hover { border-color: var(--text-muted); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.sisy-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.sisy-card-title { font-weight: 600; font-size: 1.05em; }
+.sisy-card-meta { display: flex; align-items: center; gap: 10px; }
 
-.sisy-oracle h4 {
-    margin: 0 0 10px 0;
-    color: var(--sisy-purple);
-    text-transform: uppercase;
-    font-size: 0.95em;
-}
+/* Specific Card Types */
+.sisy-mission-completed { opacity: 0.6; filter: grayscale(0.8); }
+.sisy-card-boss { border: 1px solid var(--sisy-red); background: rgba(255, 0, 0, 0.05); }
+.sisy-boss-enraged { animation: pulse-border 1s infinite; }
 
-.sisy-oracle > div {
-    margin-bottom: 8px;
-    font-size: 0.9em;
-    line-height: 1.5;
-}
+/* === TIMERS & BADGES === */
+.sisy-timer { font-size: 0.8em; padding: 2px 8px; background: var(--background-modifier-form-field); border-radius: 10px; font-family: monospace; }
+.sisy-timer-late { color: var(--sisy-red); background: rgba(255, 85, 85, 0.1); }
+.sisy-tag { font-size: 0.7em; padding: 2px 6px; border-radius: 4px; background: var(--sisy-border); color: var(--text-muted); }
 
-.sisy-status-lights {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 8px;
-}
+/* === BUTTONS & CONTROLS === */
+.sisy-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+.sisy-btn { padding: 8px 12px; border-radius: 4px; cursor: pointer; border: 1px solid var(--sisy-border); background: var(--interactive-normal); font-size: 0.9em; text-align: center; transition: all 0.15s; }
+.sisy-btn:hover { background: var(--interactive-hover); transform: translateY(-1px); }
+.sisy-btn:active { transform: translateY(0); }
 
-.sisy-light-active {
-    display: inline-block;
-    padding: 3px 8px;
-    background: var(--sisy-red);
-    color: #000;
-    border-radius: 3px;
-    font-size: 0.75em;
-    font-weight: bold;
-}
+.mod-cta { background: var(--interactive-accent); color: var(--text-on-accent); border: none; font-weight: 600; }
+.mod-done { background: rgba(85, 255, 85, 0.1); color: var(--sisy-green); border-color: rgba(85, 255, 85, 0.3); }
+.mod-done:hover { background: rgba(85, 255, 85, 0.2); }
+.mod-fail { background: rgba(255, 85, 85, 0.1); color: var(--sisy-red); border-color: rgba(255, 85, 85, 0.3); }
+.mod-fail:hover { background: rgba(255, 85, 85, 0.2); }
 
-.sisy-scar-display {
-    color: var(--sisy-gold);
-    font-size: 0.9em;
-    padding-top: 8px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
+.sisy-actions { display: flex; gap: 8px; margin-top: 12px; }
+.sisy-action-btn { flex: 1; }
 
-.sisy-scar-display span {
-    display: block;
-    margin-bottom: 4px;
-}
+/* === FILTERS === */
+.sisy-filter-bar { background: var(--sisy-bg-dim); border: 1px solid var(--sisy-border); padding: 10px; border-radius: 6px; margin-bottom: 20px; }
+.sisy-filter-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.9em; }
+.sisy-filter-label { font-weight: bold; margin-right: 10px; min-width: 60px; color: var(--text-muted); }
+.sisy-filter-btn { margin-right: 5px; padding: 3px 8px; border-radius: 3px; cursor: pointer; background: transparent; border: 1px solid transparent; opacity: 0.7; }
+.sisy-filter-btn:hover { opacity: 1; background: var(--background-modifier-hover); }
+.sisy-filter-active { background: var(--sisy-blue); color: white; opacity: 1; font-weight: bold; }
 
-.sisy-scar-display small {
-    display: block;
-    font-size: 0.85em;
-    opacity: 0.7;
-}
-
-.sisy-milestone {
-    color: var(--sisy-blue);
-    font-size: 0.9em;
-    padding-top: 8px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.sisy-milestone span {
-    display: block;
-    margin-bottom: 4px;
-}
-
-.sisy-milestone small {
-    display: block;
-    font-size: 0.85em;
-    opacity: 0.7;
-}
-
-/* === SECTION TITLES === */
-.sisy-section-title {
-    text-transform: uppercase;
-    font-size: 0.9em;
-    letter-spacing: 1px;
-    color: #aaa;
-    margin-top: 15px;
-    margin-bottom: 10px;
-    border-bottom: 1px solid var(--sisy-border);
-    padding-bottom: 6px;
-}
-
-/* === DAILY MISSIONS (DLC 1) === */
-.sisy-daily-missions {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.sisy-mission-card {
-    border: 1px solid var(--sisy-border);
-    border-radius: 4px;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
-}
-
-.sisy-mission-card:hover {
-    border-color: var(--sisy-blue);
-    background: rgba(0, 176, 255, 0.05);
-}
-
-.sisy-mission-card.sisy-mission-completed {
-    border-color: var(--sisy-green);
-    background: rgba(85, 255, 85, 0.05);
-    opacity: 0.7;
-}
-
-.sisy-mission-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 6px;
-}
-
-.sisy-mission-status {
-    font-size: 1.1em;
-    min-width: 20px;
-    text-align: center;
-}
-
-.sisy-mission-name {
-    font-weight: bold;
-    font-size: 0.95em;
-    flex: 1;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.sisy-mission-desc {
-    font-size: 0.8em;
-    color: #bbb;
-    margin: 4px 0;
-    margin-left: 28px;
-}
-
-.sisy-mission-progress {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 6px 0;
-    margin-left: 28px;
-}
-
-.sisy-mission-counter {
-    font-size: 0.75em;
-    color: var(--sisy-text);
-    min-width: 30px;
-}
-
-.sisy-bar-bg {
-    flex: 1;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-    overflow: hidden;
-    border: 1px solid var(--sisy-border);
-}
-
-.sisy-bar-fill {
-    height: 100%;
-    background: var(--sisy-blue);
-    border-radius: 3px;
-    transition: width 0.3s ease;
-    box-shadow: 0 0 10px rgba(0, 176, 255, 0.5);
-}
-
-.sisy-mission-reward {
-    display: flex;
-    gap: 8px;
-    margin-top: 6px;
-    margin-left: 28px;
-    font-size: 0.8em;
-    font-weight: bold;
-}
-
-.sisy-reward-xp {
-    padding: 2px 6px;
-    background: rgba(85, 255, 85, 0.2);
-    border-radius: 2px;
-    color: var(--sisy-green);
-}
-
-.sisy-reward-gold {
-    padding: 2px 6px;
-    background: rgba(255, 215, 0, 0.2);
-    border-radius: 2px;
-    color: var(--sisy-gold);
-}
-
-.sisy-mission-bonus {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 10px;
-    background: rgba(255, 215, 0, 0.1);
-    border: 1px solid var(--sisy-gold);
-    border-radius: 4px;
-    color: var(--sisy-gold);
-    font-weight: bold;
-    font-size: 0.9em;
-    margin-top: 8px;
-}
-
-.sisy-empty-state {
-    text-align: center;
-    padding: 20px;
-    opacity: 0.5;
-    font-size: 0.9em;
-}
-
-/* === CONTROLS === */
-.sisy-controls {
-    display: flex;
-    gap: 8px;
-    margin: 15px 0;
-}
-
-.sisy-btn {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid var(--sisy-border);
-    border-radius: 4px;
-    background: rgba(0, 0, 0, 0.5);
-    color: var(--sisy-text);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    font-size: 0.85em;
-    font-weight: bold;
-    letter-spacing: 0.5px;
-    font-family: 'Courier New', monospace;
-}
-
-.sisy-btn:hover {
-    border-color: var(--sisy-blue);
-    background: rgba(0, 176, 255, 0.1);
-}
-
-.sisy-btn.mod-cta {
-    border-color: var(--sisy-blue);
-    background: rgba(0, 176, 255, 0.2);
-    color: var(--sisy-blue);
-}
-
-.sisy-btn.mod-cta:hover {
-    background: rgba(0, 176, 255, 0.3);
-    box-shadow: 0 0 15px rgba(0, 176, 255, 0.5);
-}
-
-/* === QUEST CARDS === */
-.sisy-card {
-    border: 1px solid var(--sisy-border);
-    border-radius: 4px;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.3);
-    margin-bottom: 8px;
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-.sisy-card:hover {
-    border-color: var(--sisy-blue);
-    background: rgba(0, 176, 255, 0.05);
-}
-
-.sisy-card.sisy-card-1 {
-    border-left: 3px solid var(--sisy-green);
-}
-
-.sisy-card.sisy-card-2 {
-    border-left: 3px solid #44ff44;
-}
-
-.sisy-card.sisy-card-3 {
-    border-left: 3px solid var(--sisy-blue);
-}
-
-.sisy-card.sisy-card-4 {
-    border-left: 3px solid var(--sisy-orange);
-}
-
-.sisy-card.sisy-card-5 {
-    border-left: 3px solid var(--sisy-red);
-}
-
-.sisy-card.sisy-card-boss {
-    border: 2px solid var(--sisy-purple);
-    background: rgba(170, 85, 255, 0.1);
-    box-shadow: 0 0 10px rgba(170, 85, 255, 0.3);
-}
-
-.sisy-card-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
-.sisy-card-title {
-    font-weight: bold;
-    flex: 1;
-}
-
-.sisy-timer {
-    font-size: 0.8em;
-    padding: 3px 6px;
-    background: rgba(0, 176, 255, 0.2);
-    border-radius: 2px;
-    color: var(--sisy-blue);
-}
-
-.sisy-timer-late {
-    background: rgba(255, 85, 85, 0.2) !important;
-    color: var(--sisy-red) !important;
-    animation: pulse-red 1s infinite;
-}
-
-.sisy-trash {
-    cursor: pointer;
-    opacity: 0.4;
-    transition: opacity 0.3s;
-    position: absolute;
-    right: 10px;
-    top: 10px;
-}
-
-.sisy-trash:hover {
-    opacity: 1;
-    color: var(--sisy-red);
-}
-
-.sisy-actions {
-    display: flex;
-    gap: 6px;
-    margin-top: 8px;
-}
-
-.sisy-action-btn {
-    flex: 1;
-    padding: 6px;
-    border: 1px solid var(--sisy-border);
-    border-radius: 2px;
-    background: rgba(0, 0, 0, 0.5);
-    color: var(--sisy-text);
-    cursor: pointer;
-    font-size: 0.8em;
-    transition: all 0.3s ease;
-}
-
-.sisy-action-btn:hover {
-    border-color: var(--sisy-blue);
-}
-
-.sisy-action-btn.mod-done {
-    border-color: var(--sisy-green);
-    background: rgba(85, 255, 85, 0.1);
-    color: var(--sisy-green);
-}
-
-.sisy-action-btn.mod-done:hover {
-    background: rgba(85, 255, 85, 0.2);
-}
-
-.sisy-action-btn.mod-fail {
-    border-color: var(--sisy-red);
-    background: rgba(255, 85, 85, 0.1);
-    color: var(--sisy-red);
-}
-
-.sisy-action-btn.mod-fail:hover {
-    background: rgba(255, 85, 85, 0.2);
+/* === BULK BAR === */
+.sisy-bulk-bar {
+    position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+    background: rgba(30, 30, 30, 0.95); border: 1px solid var(--sisy-blue);
+    backdrop-filter: blur(10px);
+    border-radius: 40px; padding: 12px 25px; display: flex; gap: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 1000;
+    animation: slide-up 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 /* === SKILLS === */
-.sisy-skill-row {
-    border: 1px solid var(--sisy-border);
-    border-radius: 4px;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.3);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    margin-bottom: 8px;
-}
+.sisy-skill-row { cursor: pointer; padding: 8px; border-radius: 4px; transition: background 0.1s; }
+.sisy-skill-row:hover { background: var(--background-modifier-hover); }
+.sisy-skill-meta { display: flex; justify-content: space-between; font-size: 0.9em; margin-bottom: 4px; }
+.sisy-text-rust { color: #d35400; font-weight: bold; font-size: 0.8em; }
 
-.sisy-skill-row:hover {
-    border-color: var(--sisy-blue);
-    background: rgba(0, 176, 255, 0.05);
-}
+/* === PROGRESS BARS === */
+.sisy-bar-bg { height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; margin-top: 5px; }
+.sisy-bar-fill { height: 100%; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+.sisy-fill-blue { background: var(--sisy-blue); }
+.sisy-fill-green { background: var(--sisy-green); }
+.sisy-fill-purple { background: var(--sisy-purple); }
+.sisy-fill-red { background: var(--sisy-red); }
 
-.sisy-skill-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 6px;
-    font-size: 0.9em;
-}
+/* === CHARTS === */
+.sisy-analytics h4 { margin-top: 15px; color: var(--sisy-blue); font-size: 0.9em; }
 
-.sisy-skill-meta span {
-    display: inline;
-}
-
-.sisy-rust-badge {
-    padding: 2px 6px;
-    background: rgba(211, 84, 0, 0.3);
-    border-radius: 2px;
-    color: var(--sisy-orange);
-    font-size: 0.8em;
-}
-
-.sisy-add-skill {
-    padding: 10px;
-    text-align: center;
-    border: 1px dashed var(--sisy-border);
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    color: #aaa;
-    font-size: 0.9em;
-}
-
-.sisy-add-skill:hover {
-    border-color: var(--sisy-blue);
-    color: var(--sisy-blue);
-    background: rgba(0, 176, 255, 0.05);
-}
-
-/* === QUICK CAPTURE === */
-.sisy-quick-capture {
-    border-top: 1px solid var(--sisy-border);
-    padding: 12px;
-    background: rgba(0, 0, 0, 0.5);
-}
-
-.sisy-quick-input {
+/* [FIX] Removed internal margin from SVG via class */
+.sisy-chart-svg { 
+    background: var(--sisy-bg-dim); 
+    border-radius: 6px; 
+    display: block; /* Prevents inline spacing gaps */
     width: 100%;
-    padding: 10px;
-    border: 1px solid var(--sisy-border);
-    border-radius: 4px;
-    background: rgba(0, 0, 0, 0.5);
-    color: var(--sisy-text);
-    font-family: 'Courier New', monospace;
-    font-size: 0.9em;
-    transition: all 0.3s ease;
 }
 
-.sisy-quick-input:focus {
-    outline: none;
-    border-color: var(--sisy-blue);
-    background: rgba(0, 176, 255, 0.05);
-    box-shadow: 0 0 10px rgba(0, 176, 255, 0.3);
+/* [FIX] RIGID CONTAINERS: Hard-lock height and spacing to prevent Yo-Yo */
+.sisy-chart-container-line {
+    height: 110px; /* Exact height of chart (100px) + internal spacing */
+    width: 100%;
+    margin-top: 10px; /* Space is reserved on the container, not the SVG */
+    margin-bottom: 10px;
+    overflow: hidden; /* Force exact size */
+    display: flex;    /* Centers loading state if needed */
+    align-items: center;
 }
 
-.sisy-quick-input::placeholder {
-    color: #666;
+.sisy-chart-container-heat {
+    height: 100px; /* Exact height for heatmap rows */
+    width: 100%;
+    margin-top: 10px;
+    overflow: hidden;
 }
 
-/* === RESPONSIVE === */
-@media (max-width: 600px) {
-    .sisy-hud {
-        grid-template-columns: 1fr;
-    }
-    
-    .sisy-controls {
-        flex-direction: column;
-    }
-    
-    .sisy-stat-box {
-        padding: 10px;
-    }
-    
-    .sisy-stat-val {
-        font-size: 1.3em;
-    }
+/* Heatmap Grid */
+.sisy-heatmap { 
+    display: grid; 
+    grid-template-columns: repeat(7, 1fr); 
+    gap: 4px; 
+    width: 100%;
 }
+
+.sisy-heat-cell { 
+    width: 100%; 
+    aspect-ratio: 1; 
+    border-radius: 3px; 
+    transition: transform 0.2s; 
+}
+.sisy-heat-cell:hover { transform: scale(1.2); border: 1px solid white; z-index: 10; }
+
+/* === INPUT === */
+.sisy-quick-capture { margin-top: 10px; border-top: 1px solid var(--sisy-border); padding-top: 10px; }
+.sisy-quick-input { width: 100%; background: var(--background-primary); border: 1px solid var(--background-modifier-border); padding: 10px; border-radius: 6px; }
+.sisy-quick-input:focus { border-color: var(--sisy-blue); box-shadow: 0 0 0 2px rgba(0, 176, 255, 0.2); }
 
 /* === ANIMATIONS === */
-@keyframes glow-pulse {
-    0%, 100% { box-shadow: 0 0 10px rgba(0, 176, 255, 0.3); }
-    50% { box-shadow: 0 0 20px rgba(0, 176, 255, 0.6); }
-}
-
-@keyframes scale-up {
-    from { transform: scale(0.95); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-}
-
-.sisy-btn.mod-cta:active {
-    transform: scale(0.98);
-}
-
-
-/* === DLC 2: RESEARCH QUEST STYLING === */
-
-.sisy-research-stats {
-    border: 1px solid #666;
-    padding: 10px;
-    border-radius: 4px;
-    margin-bottom: 10px;
-    background: rgba(170, 100, 255, 0.05);
-}
-
-.sisy-research-stats p {
-    margin: 5px 0;
-    font-size: 0.9em;
-    color: var(--sisy-text);
-}
-
-.sisy-research-stats p:first-child {
-    margin-top: 0;
-}
-
-.sisy-research-card {
-    border: 1px solid #aa64ff;
-    padding: 10px;
-    margin-bottom: 8px;
-    border-radius: 4px;
-    background: rgba(170, 100, 255, 0.05);
-    transition: all 0.3s ease;
-}
-
-.sisy-research-card:hover {
-    border-color: var(--sisy-blue);
-    background: rgba(170, 100, 255, 0.1);
-}
-
-.sisy-research-card > div:first-child {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 6px;
-}
-
-.sisy-research-card span {
-    font-weight: bold;
-}
-
-.sisy-research-card .research-type {
-    font-size: 0.75em;
-    padding: 2px 6px;
-    background: rgba(170, 100, 255, 0.3);
-    border-radius: 2px;
-    font-weight: normal;
-}
-
-.sisy-research-card p {
-    margin: 5px 0;
-    font-size: 0.85em;
-}
-
-.sisy-research-bar {
-    height: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-    overflow: hidden;
-    margin: 6px 0;
-    border: 1px solid var(--sisy-border);
-}
-
-.sisy-research-bar-fill {
-    height: 100%;
-    background: #aa64ff;
-    transition: width 0.3s ease;
-    box-shadow: 0 0 10px rgba(170, 100, 255, 0.5);
-}
-
-.sisy-research-actions {
-    display: flex;
-    gap: 5px;
-    margin-top: 8px;
-}
-
-.sisy-research-btn {
-    flex: 1;
-    padding: 6px;
-    border: 1px solid;
-    border-radius: 3px;
-    cursor: pointer;
-    font-size: 0.85em;
-    font-weight: bold;
-    text-transform: uppercase;
-    transition: all 0.3s ease;
-    background: rgba(0, 0, 0, 0.3);
-}
-
-.sisy-research-btn-complete {
-    border-color: var(--sisy-green);
-    color: var(--sisy-green);
-    background: rgba(85, 255, 85, 0.1);
-}
-
-.sisy-research-btn-complete:hover {
-    background: rgba(85, 255, 85, 0.2);
-    box-shadow: 0 0 10px rgba(85, 255, 85, 0.3);
-}
-
-.sisy-research-btn-delete {
-    border-color: var(--sisy-red);
-    color: var(--sisy-red);
-    background: rgba(255, 85, 85, 0.1);
-}
-
-.sisy-research-btn-delete:hover {
-    background: rgba(255, 85, 85, 0.2);
-    box-shadow: 0 0 10px rgba(255, 85, 85, 0.3);
-}
-
-.sisy-research-completed {
-    opacity: 0.6;
-    font-size: 0.9em;
-    margin: 3px 0;
-    padding-left: 20px;
-    color: var(--sisy-green);
-}
-
-.sisy-research-blocked {
-    color: var(--sisy-orange);
-    font-weight: bold;
-    margin: 5px 0;
-    padding: 5px;
-    background: rgba(255, 153, 68, 0.1);
-    border: 1px solid var(--sisy-orange);
-    border-radius: 2px;
-}
-
-/* === RESEARCH MODAL STYLES === */
-
-.research-stats {
-    border: 1px solid #aa64ff;
-    padding: 10px;
-    border-radius: 4px;
-    margin-bottom: 15px;
-    background: rgba(170, 100, 255, 0.05);
-}
-
-.research-stats p {
-    margin: 5px 0;
-    font-size: 0.95em;
-}
-
-.research-card {
-    border: 1px solid #aa64ff;
-    padding: 10px;
-    margin: 5px 0;
-    border-radius: 4px;
-    background: rgba(170, 100, 255, 0.05);
-}
-
-.research-card h4 {
-    margin: 0 0 5px 0;
-    color: var(--sisy-purple);
-}
-
-.research-card div {
-    font-size: 0.9em;
-    opacity: 0.8;
-    margin: 3px 0;
-}
-
-.research-card button {
-    padding: 5px 10px;
-    margin: 3px 5px 3px 0;
-    border: 1px solid;
-    border-radius: 3px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: all 0.3s ease;
-}
-
-.research-card button:first-of-type {
-    background: rgba(85, 255, 85, 0.2);
-    border-color: var(--sisy-green);
-    color: var(--sisy-green);
-}
-
-.research-card button:first-of-type:hover {
-    background: rgba(85, 255, 85, 0.3);
-}
-
-.research-card button:last-of-type {
-    background: rgba(255, 85, 85, 0.2);
-    border-color: var(--sisy-red);
-    color: var(--sisy-red);
-}
-
-.research-card button:last-of-type:hover {
-    background: rgba(255, 85, 85, 0.3);
-}
-
-
-
-
-/* === RESEARCH MODAL STYLES === */
-
-.research-stats {
-    border: 1px solid #aa64ff;
-    padding: 10px;
-    border-radius: 4px;
-    margin-bottom: 15px;
-    background: rgba(170, 100, 255, 0.05);
-}
-
-.research-stats p {
-    margin: 5px 0;
-    font-size: 0.95em;
-}
-
-.research-card {
-    border: 1px solid #aa64ff;
-    padding: 10px;
-    margin: 5px 0;
-    border-radius: 4px;
-    background: rgba(170, 100, 255, 0.05);
-}
-
-.research-card h4 {
-    margin: 0 0 5px 0;
-    color: var(--sisy-purple);
-}
-
-.research-card div {
-    font-size: 0.9em;
-    opacity: 0.8;
-    margin: 3px 0;
-}
-
-.research-card button {
-    padding: 5px 10px;
-    margin: 3px 5px 3px 0;
-    border: 1px solid;
-    border-radius: 3px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: all 0.3s ease;
-}
-
-.research-card button:first-of-type {
-    background: rgba(85, 255, 85, 0.2);
-    border-color: var(--sisy-green);
-    color: var(--sisy-green);
-}
-
-.research-card button:first-of-type:hover {
-    background: rgba(85, 255, 85, 0.3);
-}
-
-.research-card button:last-of-type {
-    background: rgba(255, 85, 85, 0.2);
-    border-color: var(--sisy-red);
-    color: var(--sisy-red);
-}
-
-.research-card button:last-of-type:hover {
-    background: rgba(255, 85, 85, 0.3);
-}
-
-
-/* === DLC 3: MEDITATION & RECOVERY STYLING === */
-
-.meditation-container {
-    margin-top: 10px;
-    padding: 10px;
-    background: rgba(170, 100, 255, 0.1);
-    border: 1px solid rgba(170, 100, 255, 0.3);
-    border-radius: 4px;
-}
-
-.meditation-progress {
-    font-size: 0.9em;
-    margin-bottom: 8px;
-    color: var(--sisy-text);
-}
-
-.meditation-bar {
-    height: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-    margin: 6px 0;
-    overflow: hidden;
-    border: 1px solid var(--sisy-border);
-}
-
-.meditation-bar-fill {
-    height: 100%;
-    background: #aa64ff;
-    transition: width 0.3s ease;
-    box-shadow: 0 0 10px rgba(170, 100, 255, 0.5);
-}
-
-.meditation-button {
-    width: 100%;
-    padding: 8px;
-    margin-top: 8px;
-    background: rgba(170, 100, 255, 0.3);
-    border: 1px solid #aa64ff;
-    border-radius: 4px;
-    color: #aa64ff;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 0.9em;
-    text-transform: uppercase;
-}
-
-.meditation-button:hover {
-    background: rgba(170, 100, 255, 0.5);
-    box-shadow: 0 0 15px rgba(170, 100, 255, 0.5);
-}
-
-.meditation-button:active {
-    transform: scale(0.98);
-}
-
-.meditation-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* Breathing animation */
-@keyframes breathe {
-    0%, 100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-    50% {
-        transform: scale(1.05);
-        opacity: 0.8;
-    }
-}
-
-.meditation-breathing {
-    animation: breathe 4s infinite;
-}
-
-.deletion-quota {
-    font-size: 0.8em;
-    color: #aaa;
-    margin-top: 5px;
-    padding: 5px;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 2px;
-}
-
-.deletion-quota.warning {
-    color: var(--sisy-orange);
-}
-
-.deletion-quota.paid {
-    color: var(--sisy-red);
-}
-
-
-/* === DLC 4: QUEST CHAINS STYLING === */
-
-.sisy-chain-container {
-    border: 1px solid #4caf50;
-    padding: 12px;
-    border-radius: 4px;
-    background: rgba(76, 175, 80, 0.05);
-    margin-bottom: 10px;
-    transition: all 0.3s ease;
-}
-
-.sisy-chain-container:hover {
-    background: rgba(76, 175, 80, 0.1);
-    border-color: #66bb6a;
-}
-
-.sisy-chain-container h3 {
-    margin: 0 0 10px 0;
-    color: #4caf50;
-    font-size: 1em;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.sisy-chain-progress {
-    margin: 5px 0;
-    font-size: 0.9em;
-    color: var(--sisy-text);
-}
-
-.sisy-chain-bar {
-    height: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-    margin: 8px 0;
-    overflow: hidden;
-    border: 1px solid var(--sisy-border);
-}
-
-.sisy-chain-bar-fill {
-    height: 100%;
-    background: #4caf50;
-    transition: width 0.3s ease;
-    box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
-}
-
-.sisy-chain-quests {
-    margin: 10px 0;
-    font-size: 0.85em;
-}
-
-.sisy-chain-quest-item {
-    margin: 3px 0;
-    padding: 3px;
-    border-left: 2px solid transparent;
-    transition: all 0.3s ease;
-}
-
-.sisy-chain-quest-done {
-    opacity: 0.6;
-    border-left-color: #4caf50;
-    color: #4caf50;
-}
-
-.sisy-chain-quest-active {
-    font-weight: bold;
-    color: #4caf50;
-    border-left-color: #4caf50;
-    background: rgba(76, 175, 80, 0.1);
-}
-
-.sisy-chain-quest-locked {
-    opacity: 0.4;
-    border-left-color: #666;
-}
-
-.sisy-chain-actions {
-    display: flex;
-    gap: 5px;
-    margin-top: 10px;
-}
-
-.sisy-chain-button {
-    flex: 1;
-    padding: 6px;
-    border: 1px solid;
-    border-radius: 3px;
-    cursor: pointer;
-    font-size: 0.8em;
-    font-weight: bold;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-}
-
-.sisy-chain-btn-break {
-    background: rgba(255, 85, 85, 0.2);
-    border-color: #ff5555;
-    color: #ff5555;
-}
-
-.sisy-chain-btn-break:hover {
-    background: rgba(255, 85, 85, 0.3);
-}
-
-.sisy-chain-btn-stats {
-    background: rgba(0, 176, 255, 0.2);
-    border-color: #00b0ff;
-    color: #00b0ff;
-}
-
-.sisy-chain-btn-stats:hover {
-    background: rgba(0, 176, 255, 0.3);
-}
-
-/* Chain Builder Modal */
-.chain-builder {
-    padding: 10px;
-}
-
-.chain-builder-quest-item {
-    display: flex;
-    gap: 5px;
-    padding: 8px;
-    margin: 5px 0;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--sisy-border);
-    border-radius: 3px;
-    align-items: center;
-}
-
-.chain-builder-quest-item span {
-    flex: 1;
-}
-
-.chain-builder-remove {
-    padding: 2px 6px;
-    background: rgba(255, 85, 85, 0.2);
-    border: 1px solid #ff5555;
-    color: #ff5555;
-    border-radius: 2px;
-    cursor: pointer;
-    font-size: 0.8em;
-}
-
-.chain-builder-remove:hover {
-    background: rgba(255, 85, 85, 0.3);
-}
-
-
-/* === DLC 5: CONTEXT FILTERS STYLING === */
-
-.sisy-filter-bar {
-    border: 1px solid #0088ff;
-    padding: 12px;
-    border-radius: 4px;
-    background: rgba(0, 136, 255, 0.05);
-    margin-bottom: 15px;
-}
-
-.sisy-filter-bar span {
-    font-weight: bold;
-    color: var(--sisy-text);
-    margin-right: 8px;
-}
-
-.sisy-filter-bar button {
-    margin: 0 3px 8px 0;
-    padding: 6px 12px;
-    border-radius: 3px;
-    cursor: pointer;
-    border: 1px solid;
-    font-size: 0.8em;
-    font-weight: bold;
-    text-transform: uppercase;
-    transition: all 0.3s ease;
-    background: rgba(0, 136, 255, 0.2);
-    border-color: rgba(0, 136, 255, 0.4);
-    color: var(--sisy-text);
-}
-
-.sisy-filter-bar button:hover {
-    border-color: #0088ff;
-    background: rgba(0, 136, 255, 0.3);
-}
-
-.sisy-filter-bar button.active {
-    background: #0088ff;
-    border-color: #0088ff;
-    color: white;
-    box-shadow: 0 0 10px rgba(0, 136, 255, 0.5);
-}
-
-.sisy-filter-group {
-    margin-bottom: 12px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: center;
-}
-
-.sisy-filter-label {
-    min-width: 70px;
-    font-weight: bold;
-    font-size: 0.9em;
-    text-transform: uppercase;
-    color: #0088ff;
-}
-
-.sisy-quest-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 6px;
-}
-
-.sisy-quest-tag {
-    display: inline-block;
-    padding: 2px 6px;
-    background: rgba(0, 136, 255, 0.2);
-    border: 1px solid rgba(0, 136, 255, 0.4);
-    border-radius: 2px;
-    font-size: 0.75em;
-    color: #0088ff;
-}
-
-.sisy-energy-high {
-    background: rgba(76, 175, 80, 0.2);
-    border: 1px solid rgba(76, 175, 80, 0.4);
-    color: #4caf50;
-}
-
-.sisy-energy-medium {
-    background: rgba(255, 193, 7, 0.2);
-    border: 1px solid rgba(255, 193, 7, 0.4);
-    color: #ffc107;
-}
-
-.sisy-energy-low {
-    background: rgba(255, 152, 0, 0.2);
-    border: 1px solid rgba(255, 152, 0, 0.4);
-    color: #ff9800;
-}
-
-.sisy-context-home {
-    background: rgba(156, 39, 176, 0.2);
-    border: 1px solid rgba(156, 39, 176, 0.4);
-    color: #9c27b0;
-}
-
-.sisy-context-office {
-    background: rgba(33, 150, 243, 0.2);
-    border: 1px solid rgba(33, 150, 243, 0.4);
-    color: #2196f3;
-}
-
-.sisy-context-anywhere {
-    background: rgba(76, 175, 80, 0.2);
-    border: 1px solid rgba(76, 175, 80, 0.4);
-    color: #4caf50;
-}
-
-.sisy-filter-clear {
-    width: 100%;
-    padding: 8px;
-    margin-top: 10px;
-    background: rgba(255, 85, 85, 0.2);
-    border: 1px solid #ff5555;
-    color: #ff5555;
-    border-radius: 3px;
-    cursor: pointer;
-    font-weight: bold;
-    text-transform: uppercase;
-    font-size: 0.85em;
-    transition: all 0.3s ease;
-}
-
-.sisy-filter-clear:hover {
-    background: rgba(255, 85, 85, 0.3);
-    box-shadow: 0 0 10px rgba(255, 85, 85, 0.3);
-}
-
-
-/* === DLC 6: ANALYTICS & ENDGAME STYLING === */
-
-.sisy-analytics {
-    border: 1px solid #ffc107;
-    padding: 12px;
-    border-radius: 4px;
-    background: rgba(255, 193, 7, 0.05);
-    margin-bottom: 15px;
-}
-
-.sisy-analytics h3 {
-    margin: 0 0 10px 0;
-    font-size: 1em;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #ffc107;
-}
-
-.sisy-analytics h4 {
-    margin: 12px 0 8px 0;
-    font-size: 0.9em;
-    text-transform: uppercase;
-    color: #ffc107;
-}
-
-.sisy-analytics-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 10px;
-}
-
-.sisy-stat-item {
-    border: 1px solid #ffc107;
-    padding: 8px;
-    border-radius: 3px;
-    background: rgba(255, 193, 7, 0.1);
-    text-align: center;
-}
-
-.sisy-stat-item-label {
-    font-size: 0.8em;
-    opacity: 0.7;
-    margin-bottom: 5px;
-    text-transform: uppercase;
-}
-
-.sisy-stat-item-value {
-    font-size: 1.2em;
-    font-weight: bold;
-    color: #ffc107;
-}
-
-.sisy-boss-list {
-    margin-top: 10px;
-}
-
-.sisy-boss-item {
-    margin: 6px 0;
-    padding: 8px;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 3px;
-    border-left: 3px solid transparent;
-    transition: all 0.3s ease;
-}
-
-.sisy-boss-defeated {
-    border-left-color: #4caf50;
-    color: #4caf50;
-    font-weight: bold;
-}
-
-.sisy-boss-unlocked {
-    border-left-color: #ffc107;
-    color: #ffc107;
-}
-
-.sisy-boss-locked {
-    opacity: 0.4;
-    border-left-color: #666;
-}
-
-.sisy-win-banner {
-    margin-top: 12px;
-    padding: 12px;
-    background: rgba(76, 175, 80, 0.2);
-    border: 2px solid #4caf50;
-    border-radius: 4px;
-    text-align: center;
-    animation: glow-pulse 1s infinite;
-}
-
-.sisy-win-banner p {
-    margin: 0;
-    font-size: 1.2em;
-    font-weight: bold;
-    color: #4caf50;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.sisy-streak-counter {
-    display: flex;
-    gap: 10px;
-    margin: 10px 0;
-    padding: 10px;
-    background: rgba(255, 193, 7, 0.1);
-    border-radius: 3px;
-}
-
-.sisy-streak-item {
-    flex: 1;
-    text-align: center;
-}
-
-.sisy-streak-label {
-    font-size: 0.75em;
-    opacity: 0.7;
-    text-transform: uppercase;
-}
-
-.sisy-streak-value {
-    font-size: 1.3em;
-    font-weight: bold;
-    color: #ffc107;
-    margin-top: 5px;
-}
-
-.sisy-heatmap {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-    margin: 10px 0;
-}
-
-.sisy-heatmap-day {
-    aspect-ratio: 1;
-    border-radius: 2px;
-    cursor: help;
-    font-size: 0.7em;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-}
-
-.sisy-heatmap-0 {
-    background: rgba(0, 0, 0, 0.3);
-}
-
-.sisy-heatmap-1 {
-    background: rgba(76, 175, 80, 0.3);
-    color: #4caf50;
-}
-
-.sisy-heatmap-2 {
-    background: rgba(76, 175, 80, 0.6);
-    color: #4caf50;
-}
-
-.sisy-heatmap-3 {
-    background: rgba(76, 175, 80, 1);
-    color: white;
-}
-
-.sisy-heatmap-day:hover {
-    transform: scale(1.1);
-    box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
-}
-
-.sisy-achievement-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin: 10px 0;
-}
-
-.sisy-achievement {
-    padding: 6px 12px;
-    border-radius: 3px;
-    font-size: 0.8em;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border: 1px solid;
-}
-
-.sisy-achievement-locked {
-    opacity: 0.3;
-    background: rgba(0, 0, 0, 0.2);
-    border-color: #666;
-}
-
-.sisy-achievement-common {
-    background: rgba(100, 200, 255, 0.2);
-    border-color: #64c8ff;
-    color: #64c8ff;
-}
-
-.sisy-achievement-rare {
-    background: rgba(100, 255, 100, 0.2);
-    border-color: #64ff64;
-    color: #64ff64;
-}
-
-.sisy-achievement-epic {
-    background: rgba(200, 100, 255, 0.2);
-    border-color: #c864ff;
-    color: #c864ff;
-}
-
-.sisy-achievement-legendary {
-    background: rgba(255, 200, 0, 0.2);
-    border-color: #ffc800;
-    color: #ffc800;
-}
-
-
-/* === DLC 6: VICTORY & DEBT VISUALS === */
-
-/* Debt Siren Animation */
-@keyframes siren-pulse {
-    0% { background: rgba(255, 85, 85, 0.1); border-color: #ff5555; }
-    50% { background: rgba(255, 85, 85, 0.25); border-color: #ff0000; box-shadow: 0 0 15px rgba(255, 0, 0, 0.3); }
-    100% { background: rgba(255, 85, 85, 0.1); border-color: #ff5555; }
-}
-
-.sisy-alert-debt {
-    animation: siren-pulse 2s infinite;
-    border-left: 4px solid #ff5555;
-}
-
-.sisy-alert-debt h3 {
-    color: #ff5555;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-/* Victory Modal Styling */
-.sisy-victory-modal {
-    text-align: center;
-    border: 2px solid #ffd700;
-    padding: 20px;
-    background: linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(50,50,20,0.9) 100%);
-}
-
-.sisy-victory-title {
-    font-size: 2.5em;
-    color: #ffd700;
-    text-transform: uppercase;
-    letter-spacing: 4px;
-    margin-bottom: 20px;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-}
-
-.sisy-victory-stat {
-    font-size: 1.2em;
-    margin: 10px 0;
-    color: #e0e0e0;
-}
-
-.sisy-victory-highlight {
-    color: #ffd700;
-    font-weight: bold;
-}
-
-/* === MOBILE RESPONSIVENESS === */
-@media (max-width: 768px) {
-    /* Stack the HUD grid */
-    .sisy-hud {
-        grid-template-columns: 1fr !important; 
-    }
-
-    /* Stack buttons */
-    .sisy-controls {
-        flex-direction: column;
-    }
-
-    /* Adjust font sizes */
-    .sisy-header {
-        font-size: 1.2em;
-    }
-
-    .sisy-stat-val {
-        font-size: 1.4em;
-    }
-
-    /* Make touch targets larger */
-    .sisy-btn, .sisy-action-btn, .sisy-card {
-        padding: 12px;
-        min-height: 44px; /* Apple Human Interface Guidelines */
-    }
-    
-    .sisy-trash {
-        padding: 10px; /* Easier to tap delete */
-    }
-}
+@keyframes pulse-red { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+@keyframes pulse-border { 0% { border-color: var(--sisy-red); box-shadow: 0 0 5px rgba(255,0,0,0.2); } 50% { border-color: #ff0000; box-shadow: 0 0 15px rgba(255,0,0,0.5); } 100% { border-color: var(--sisy-red); box-shadow: 0 0 5px rgba(255,0,0,0.2); } }
+@keyframes slide-up { from { transform: translate(-50%, 100%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }

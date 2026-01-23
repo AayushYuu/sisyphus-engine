@@ -18,6 +18,11 @@ export const CHAOS_TABLE: Modifier[] = [
     { name: "Rival Sabotage", desc: "Gold 0.5x.", xpMult: 1, goldMult: 0.5, priceMult: 1, icon: "🕵️" },
     { name: "Adrenaline", desc: "2x XP, -5 HP/Q.", xpMult: 2, goldMult: 1, priceMult: 1, icon: "💉" }
 ];
+export const POWER_UPS = [
+    { id: "focus_potion", name: "Focus Potion", icon: "🧪", desc: "2x XP (1h)", cost: 100, duration: 60, effect: { xpMult: 2 } },
+    { id: "midas_touch", name: "Midas Touch", icon: "✨", desc: "3x Gold (30m)", cost: 150, duration: 30, effect: { goldMult: 3 } },
+    { id: "iron_will", name: "Iron Will", icon: "🛡️", desc: "50% Dmg Reduct (2h)", cost: 200, duration: 120, effect: { damageMult: 0.5 } }
+];
 
 const BOSS_DATA: Record<number, { name: string, desc: string, hp_pen: number }> = {
     10: { name: "The Gatekeeper", desc: "The first major filter.", hp_pen: 20 },
@@ -68,6 +73,39 @@ export class SisyphusEngine extends TinyEmitter {
     set settings(val: SisyphusSettings) { this.plugin.settings = val; }
 
     async save() { await this.plugin.saveSettings(); this.trigger("update"); }
+
+    // [FIX] Safe Archiver: Handles duplicates by renaming (Quest -> Quest (1))
+    async safeArchive(file: TFile, subfolder: string = "Archive") {
+        const root = "Active_Run";
+        const targetFolder = `${root}/${subfolder}`;
+        
+        if (!this.app.vault.getAbstractFileByPath(root)) await this.app.vault.createFolder(root);
+        if (!this.app.vault.getAbstractFileByPath(targetFolder)) await this.app.vault.createFolder(targetFolder);
+
+        let targetPath = `${targetFolder}/${file.name}`;
+        
+        // Collision Detection Loop
+        let counter = 1;
+        while (this.app.vault.getAbstractFileByPath(targetPath)) {
+            targetPath = `${targetFolder}/${file.basename} (${counter}).${file.extension}`;
+            counter++;
+        }
+
+        await this.app.fileManager.renameFile(file, targetPath);
+    }
+
+    activateBuff(item: any) {
+        const expires = moment().add(item.duration, 'minutes').toISOString();
+        this.settings.activeBuffs.push({
+            id: item.id,
+            name: item.name,
+            icon: item.icon,
+            expiresAt: expires,
+            effect: item.effect
+        });
+        new Notice(`🥤 Gulp! ${item.name} active for ${item.duration}m`);
+        this.save();
+    }
 
     rollDailyMissions() {
         const available = [...MISSION_POOL];
@@ -176,11 +214,25 @@ export class SisyphusEngine extends TinyEmitter {
 
     async completeQuest(file: TFile) {
         if (this.meditationEngine.isLockedDown()) { new Notice("LOCKDOWN ACTIVE"); return; }
+        
+        // --- COMBO SYSTEM ---
+        const now = Date.now();
+        const timeDiff = now - this.settings.lastCompletionTime;
+        const COMBO_WINDOW = 10 * 60 * 1000; // 10 minutes
+
+        if (timeDiff < COMBO_WINDOW) {
+            this.settings.comboCount++;
+            this.audio.playSound("success"); 
+        } else {
+            this.settings.comboCount = 1; 
+        }
+        this.settings.lastCompletionTime = now;
+        // ---------------------------
+
         const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
         if (!fm) return;
         const questName = file.basename;
         
-        // [FIX] Quest Chain Integration
         if (this.chainsEngine.isQuestInChain(questName)) {
              const canStart = this.chainsEngine.canStartQuest(questName);
              if (!canStart) { new Notice("Locked by Chain."); return; }
@@ -207,9 +259,24 @@ export class SisyphusEngine extends TinyEmitter {
 
         this.analyticsEngine.trackDailyMetrics("quest_complete", 1);
         this.settings.researchStats.totalCombat++;
-        
-        let xp = (fm.xp_reward || 20) * this.settings.dailyModifier.xpMult;
-        let gold = (fm.gold_reward || 0) * this.settings.dailyModifier.goldMult;
+       
+        // Rewards
+        let xpMult = this.settings.dailyModifier.xpMult;
+        let goldMult = this.settings.dailyModifier.goldMult;
+
+        this.settings.activeBuffs.forEach(b => {
+            if (b.effect.xpMult) xpMult *= b.effect.xpMult;
+            if (b.effect.goldMult) goldMult *= b.effect.goldMult;
+        });
+
+        let xp = (fm.xp_reward || 20) * xpMult;
+        let gold = (fm.gold_reward || 0) * goldMult;
+
+        if (this.settings.comboCount > 1) {
+            const bonus = Math.floor(xp * 0.1 * (this.settings.comboCount - 1)); 
+            xp += bonus;
+            new Notice(`🔥 COMBO x${this.settings.comboCount}! +${bonus} Bonus XP`);
+        }
         
         const skillName = fm.skill || "None";
         const skill = this.settings.skills.find(s => s.name === skillName);
@@ -271,15 +338,15 @@ export class SisyphusEngine extends TinyEmitter {
             highStakes: fm.high_stakes 
         });
 
-        const archivePath = "Active_Run/Archive";
-        if (!this.app.vault.getAbstractFileByPath(archivePath)) await this.app.vault.createFolder(archivePath);
         await this.app.fileManager.processFrontMatter(file, (f) => { f.status = "completed"; f.completed_at = new Date().toISOString(); });
-        await this.app.fileManager.renameFile(file, `${archivePath}/${file.name}`);
+        
+        // [FIX] Use Safe Archive to prevent duplicates/zombies
+        await this.safeArchive(file, "Archive");
+        
         await this.save();
     }
 
-
-  async spawnBoss(level: number) {
+    async spawnBoss(level: number) {
         const boss = BOSS_DATA[level];
         if (!boss) return;
         this.audio.playSound("heartbeat");
@@ -289,16 +356,13 @@ export class SisyphusEngine extends TinyEmitter {
             this.audio.playSound("death");
             new Notice(`☠️ BOSS SPAWNED: ${boss.name}`);
             
-            // 1. Create the quest file
             await this.createQuest(
                 `BOSS_LVL${level} - ${boss.name}`, 5, "Boss", "None", 
                 moment().add(3, 'days').toISOString(), true, "Critical", true
             );
 
-            // 2. Inject HP into frontmatter (Delayed)
             setTimeout(async () => {
                 const safeName = `BOSS_LVL${level}_-_${boss.name}`.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-                // Try to find the file we just created
                 const files = this.app.vault.getMarkdownFiles();
                 const file = files.find(f => f.name.toLowerCase() === `${safeName}.md`);
                 
@@ -308,16 +372,13 @@ export class SisyphusEngine extends TinyEmitter {
                         fm.boss_hp = maxHp;
                         fm.boss_max_hp = maxHp;
                     });
-                    // Force UI Refresh after data is definitely saved
                     this.trigger("update"); 
                 }
             }, 500); 
         }, 3000);
     }
 
-
-
-  async damageBoss(file: TFile) {
+    async damageBoss(file: TFile) {
         const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
         if (!fm || !fm.is_boss) return;
 
@@ -329,14 +390,11 @@ export class SisyphusEngine extends TinyEmitter {
             await this.completeQuest(file);
             new Notice("⚔️ FINAL BLOW! Boss Defeated!");
         } else {
-            // Apply damage
             await this.app.fileManager.processFrontMatter(file, (f) => {
                 f.boss_hp = newHp;
             });
             this.audio.playSound("fail");
             new Notice(`⚔️ Boss Damaged! ${newHp}/${fm.boss_max_hp} HP remaining`);
-            
-            // Force UI refresh slightly after to show new HP bar
             setTimeout(() => this.trigger("update"), 200); 
         }
     }
@@ -347,6 +405,10 @@ export class SisyphusEngine extends TinyEmitter {
 
         let damage = 10 + Math.floor(this.settings.rivalDmg / 2);
         
+        this.settings.activeBuffs.forEach(b => {
+            if (b.effect.damageMult) damage = Math.floor(damage * b.effect.damageMult);
+        });
+
         const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
         if (fm?.is_boss) {
             const match = file.basename.match(/BOSS_LVL(\d+)/);
@@ -375,6 +437,7 @@ export class SisyphusEngine extends TinyEmitter {
         
         const gravePath = "Graveyard/Failures";
         if (!this.app.vault.getAbstractFileByPath(gravePath)) await this.app.vault.createFolder(gravePath);
+        
         await this.app.fileManager.renameFile(file, `${gravePath}/[FAILED] ${file.name}`);
         await this.save();
     }
@@ -417,10 +480,8 @@ deadline: ${deadlineIso}
         this.audio.playSound("click");
         this.save();
     }
-    
-    // [FIX] Apply Deletion Cost
+
     async deleteQuest(file: TFile) { 
-        // Check deletion quota and apply cost
         const costResult = this.meditationEngine.applyDeletionCost();
         
         if (costResult.cost > 0 && this.settings.gold < costResult.cost) {
@@ -428,7 +489,6 @@ deadline: ${deadlineIso}
             return;
         }
         
-        // Read and buffer for undo
         try {
             const content = await this.app.vault.read(file);
             this.deletedQuestBuffer.push({
@@ -437,15 +497,15 @@ deadline: ${deadlineIso}
                 path: file.path,
                 deletedAt: Date.now()
             });
-            // Keep buffer small (max 5 items)
             if (this.deletedQuestBuffer.length > 5) this.deletedQuestBuffer.shift();
+            this.trigger("undo:show", file.basename);
         } catch(e) { console.error("Buffer fail", e); }
 
         await this.app.vault.delete(file);
         if (costResult.message) new Notice(costResult.message);
         this.save(); 
     }
-
+  
     async undoLastDeletion() {
         const last = this.deletedQuestBuffer.pop();
         if (!last) { new Notice("Nothing to undo."); return; }
@@ -455,12 +515,24 @@ deadline: ${deadlineIso}
         try {
             await this.app.vault.create(last.path, last.content);
             new Notice(`Restored: ${last.name}`);
+            
+            setTimeout(() => {
+                this.trigger("update");
+            }, 100);
+            
         } catch (e) {
             new Notice("Could not restore file (path may be taken).");
         }
     }
 
     async checkDeadlines() {
+        const now = moment();
+        const initialCount = this.settings.activeBuffs.length;
+        this.settings.activeBuffs = this.settings.activeBuffs.filter(b => moment(b.expiresAt).isAfter(now));
+        if (this.settings.activeBuffs.length < initialCount) {
+            new Notice("A potion effect has worn off.");
+            this.trigger("update");
+        }
         const folder = this.app.vault.getAbstractFileByPath("Active_Run/Quests");
         if (!(folder instanceof TFolder)) return;
         
@@ -510,7 +582,10 @@ deadline: ${deadlineIso}
     
     completeResearchQuest(id: string, words: number) { this.researchEngine.completeResearchQuest(id, words); this.save(); }
     deleteResearchQuest(id: string) { this.researchEngine.deleteResearchQuest(id); this.save(); }
-    updateResearchWordCount(id: string, words: number) { this.researchEngine.updateResearchWordCount(id, words); }
+    updateResearchWordCount(id: string, words: number) { 
+        this.researchEngine.updateResearchWordCount(id, words);
+        this.trigger("update");
+    }
     getResearchRatio() { return this.researchEngine.getResearchRatio(); }
     canCreateResearchQuest() { return this.researchEngine.canCreateResearchQuest(); }
     

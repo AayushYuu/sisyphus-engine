@@ -1,5 +1,25 @@
 // SISYPHUS TYPE DEFINITIONS
 // DLC 2: Combat Librarian
+//
+
+export interface ActiveBuff {
+    id: string;
+    name: string;
+    expiresAt: string; // ISO string
+    icon: string;
+    effect: {
+        xpMult?: number;
+        goldMult?: number;
+        damageMult?: number;
+    }
+}
+
+export interface QuestTemplate {
+    name: string;
+    diff: number;
+    skill: string;
+    deadline: string; // e.g. "10:00" or "+2h"
+}
 
 export interface Skill {
     name: string;
@@ -161,6 +181,21 @@ export interface QuestChainRecord {
 }
 
 export interface SisyphusSettings {
+
+
+  // [NEW] Templates
+    questTemplates: QuestTemplate[];
+
+  // [NEW] Gamification
+    comboCount: number;
+    lastCompletionTime: number; // Timestamp in milliseconds
+
+  // [NEW] Active Power-Ups
+    activeBuffs: ActiveBuff[];
+
+
+
+
     // Core stats
     hp: number;
     maxHp: number;

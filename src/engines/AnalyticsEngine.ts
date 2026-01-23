@@ -52,20 +52,31 @@ export class AnalyticsEngine {
         this.checkAchievements();
     }
 
-    updateStreak() {
+  updateStreak() {
         const today = moment().format("YYYY-MM-DD");
         const lastDate = this.settings.streak.lastDate;
         
         if (lastDate !== today) {
             const yesterday = moment().subtract(1, 'day').format("YYYY-MM-DD");
             if (lastDate === yesterday) {
+                // Continued from yesterday
                 this.settings.streak.current++;
-                if (this.settings.streak.current > this.settings.streak.longest) this.settings.streak.longest = this.settings.streak.current;
+            } else if (!lastDate) {
+                // First ever quest
+                this.settings.streak.current = 1;
             } else {
+                // Broken streak
                 this.settings.streak.current = 1;
             }
+            
+            if (this.settings.streak.current > this.settings.streak.longest) {
+                this.settings.streak.longest = this.settings.streak.current;
+            }
+            
             this.settings.streak.lastDate = today;
         }
+        
+        // Always check achievements
         this.checkAchievements();
     }
 

@@ -1,8 +1,31 @@
 {
+  "questTemplates": [
+    {
+      "name": "Morning Routine",
+      "diff": 1,
+      "skill": "Discipline",
+      "deadline": "10:00"
+    },
+    {
+      "name": "Deep Work Block",
+      "diff": 3,
+      "skill": "Focus",
+      "deadline": "+2h"
+    },
+    {
+      "name": "Quick Exercise",
+      "diff": 2,
+      "skill": "Health",
+      "deadline": "+12h"
+    }
+  ],
+  "comboCount": 2,
+  "lastCompletionTime": 1769180677371,
+  "activeBuffs": [],
   "hp": 105,
   "maxHp": 105,
-  "xp": 0,
-  "gold": 0,
+  "xp": 42,
+  "gold": 90,
   "xpReq": 100,
   "level": 1,
   "rivalDmg": 10,
@@ -11,12 +34,12 @@
   "restDayUntil": "",
   "skills": [],
   "dailyModifier": {
-    "name": "Rival Sabotage",
-    "desc": "Gold 0.5x.",
+    "name": "Inflation",
+    "desc": "Prices 2x.",
     "xpMult": 1,
-    "goldMult": 0.5,
-    "priceMult": 1,
-    "icon": "🕵️"
+    "goldMult": 1,
+    "priceMult": 2,
+    "icon": "📈"
   },
   "legacy": {
     "souls": 0,
@@ -35,6 +58,34 @@
   "damageTakenToday": 0,
   "dailyMissions": [
     {
+      "id": "zero_inbox",
+      "name": "🧘 Zero Inbox",
+      "desc": "Process all files in 'Scraps'",
+      "target": 1,
+      "reward": {
+        "xp": 0,
+        "gold": 10
+      },
+      "check": "zero_inbox",
+      "checkFunc": "zero_inbox",
+      "progress": 1,
+      "completed": true
+    },
+    {
+      "id": "synergist",
+      "name": "🔗 Synergist",
+      "desc": "Complete quest with Primary + Secondary skill",
+      "target": 1,
+      "reward": {
+        "xp": 0,
+        "gold": 10
+      },
+      "check": "synergy",
+      "checkFunc": "synergy",
+      "progress": 0,
+      "completed": false
+    },
+    {
       "id": "momentum",
       "name": "🔥 Momentum",
       "desc": "Complete 3 quests today",
@@ -45,52 +96,24 @@
       },
       "check": "quest_count",
       "checkFunc": "quest_count",
-      "progress": 0,
-      "completed": false
-    },
-    {
-      "id": "morning_win",
-      "name": "☀️ Morning Win",
-      "desc": "Complete 1 Trivial quest before 10 AM",
-      "target": 1,
-      "reward": {
-        "xp": 0,
-        "gold": 15
-      },
-      "check": "morning_trivial",
-      "checkFunc": "morning_trivial",
-      "progress": 0,
-      "completed": false
-    },
-    {
-      "id": "specialist",
-      "name": "🎯 Specialist",
-      "desc": "Use the same skill 3 times",
-      "target": 3,
-      "reward": {
-        "xp": 15,
-        "gold": 0
-      },
-      "check": "skill_repeat",
-      "checkFunc": "skill_repeat",
-      "progress": 0,
+      "progress": 2,
       "completed": false
     }
   ],
   "dailyMissionDate": "2026-01-23",
-  "questsCompletedToday": 0,
+  "questsCompletedToday": 2,
   "skillUsesToday": {},
   "researchQuests": [],
   "researchStats": {
     "totalResearch": 0,
-    "totalCombat": 0,
+    "totalCombat": 2,
     "researchCompleted": 0,
     "combatCompleted": 0
   },
   "lastResearchQuestId": 0,
   "meditationCyclesCompleted": 0,
-  "questDeletionsToday": 1,
-  "lastDeletionReset": "2026-01-23",
+  "questDeletionsToday": 0,
+  "lastDeletionReset": "",
   "isMeditating": false,
   "meditationClicksThisLockdown": 0,
   "activeChains": [],
@@ -103,13 +126,24 @@
     "activeContext": "any",
     "activeTags": []
   },
-  "dayMetrics": [],
+  "dayMetrics": [
+    {
+      "date": "2026-01-23",
+      "questsCompleted": 2,
+      "questsFailed": 0,
+      "xpEarned": 0,
+      "goldEarned": 0,
+      "damagesTaken": 0,
+      "skillsLeveled": [],
+      "chainsCompleted": 0
+    }
+  ],
   "weeklyReports": [],
   "bossMilestones": [],
   "streak": {
-    "current": 0,
-    "longest": 0,
-    "lastDate": ""
+    "current": 1,
+    "longest": 1,
+    "lastDate": "2026-01-23"
   },
   "achievements": [
     {
@@ -117,7 +151,8 @@
       "name": "First Blood",
       "description": "Complete your first quest.",
       "rarity": "common",
-      "unlocked": false
+      "unlocked": true,
+      "unlockedAt": "2026-01-23T15:04:30.292Z"
     },
     {
       "id": "week_warrior",

@@ -3,9 +3,22 @@ import { SisyphusSettings } from './types';
 import { SisyphusEngine, DEFAULT_MODIFIER } from './engine';
 import { AudioController } from './utils';
 import { PanopticonView, VIEW_TYPE_PANOPTICON } from "./ui/view";
+import { SisyphusSettingTab } from './settings';
 import { ResearchQuestModal, ChainBuilderModal, ResearchListModal, QuickCaptureModal, QuestTemplateModal } from "./ui/modals";
 
 const DEFAULT_SETTINGS: SisyphusSettings = {
+    // [NEW] Default Templates
+    questTemplates: [
+        { name: "Morning Routine", diff: 1, skill: "Discipline", deadline: "10:00" },
+        { name: "Deep Work Block", diff: 3, skill: "Focus", deadline: "+2h" },
+        { name: "Quick Exercise", diff: 2, skill: "Health", deadline: "+12h" }
+    ], // Comma here, NO closing brace yet!
+  // [NEW] Defaults
+    comboCount: 0,
+    lastCompletionTime: 0,
+  // [NEW]
+    activeBuffs: [],
+
     hp: 100, maxHp: 100, xp: 0, gold: 0, xpReq: 100, level: 1, rivalDmg: 10,
     lastLogin: "", shieldedUntil: "", restDayUntil: "", skills: [],
     dailyModifier: DEFAULT_MODIFIER, 
@@ -44,6 +57,28 @@ export default class SisyphusPlugin extends Plugin {
     audio: AudioController;
 
     async onload() {
+    // --- EVENT LISTENER: FILE RENAME ---
+        this.registerEvent(this.app.vault.on('rename', (file, oldPath) => {
+            // We only care about Markdown files, and we need the basename
+            if (file instanceof TFile && file.extension === 'md') {
+                const newName = file.basename;
+                
+                // Extract old basename from the old path
+                // oldPath looks like "Active_Run/Quests/OldName.md"
+                const pathParts = oldPath.split('/');
+                const oldFileName = pathParts[pathParts.length - 1];
+                const oldName = oldFileName.replace(/\.md$/, ''); // Remove extension
+
+                if (oldName !== newName) {
+                    // Propagate rename to engines
+                    this.engine.chainsEngine.handleRename(oldName, newName);
+                    this.engine.filtersEngine.handleRename(oldName, newName);
+                    
+                    // Force save to persist changes
+                    this.engine.save();
+                }
+            }
+        }));
 
     this.addCommand({
             id: 'quest-templates',
@@ -118,6 +153,7 @@ export default class SisyphusPlugin extends Plugin {
         await this.engine.checkDailyLogin();
         this.updateStatusBar();
 
+
         // --- COMMANDS ---
         this.addCommand({ id: 'open-panopticon', name: 'Open Panopticon', callback: () => this.activateView() });
         this.addCommand({ id: 'toggle-focus', name: 'Toggle Focus Audio', callback: () => this.audio.toggleBrownNoise() });
@@ -131,10 +167,22 @@ export default class SisyphusPlugin extends Plugin {
         this.addCommand({ id: 'game-stats', name: 'Analytics: Stats', callback: () => { const s = this.engine.getGameStats(); new Notice(`Lvl ${s.level} | Streak ${s.currentStreak}`); } });
         
         this.addRibbonIcon('skull', 'Sisyphus Sidebar', () => this.activateView());
-        this.registerInterval(window.setInterval(() => this.engine.checkDeadlines(), 60000));
-        
-        // [FIX] Debounced Word Counter (Typewriter Fix)
+        // ... previous code ...
+
+    // --- SETTINGS TAB ---
+    this.addSettingTab(new SisyphusSettingTab(this.app, this));
+
+    this.addRibbonIcon('skull', 'Sisyphus Sidebar', () => this.activateView());
+    this.registerInterval(window.setInterval(() => this.engine.checkDeadlines(), 60000));
+
+
+    // [FIX] Debounced Word Counter (Typewriter Fix)
         const debouncedUpdate = debounce((file: TFile, content: string) => {
+            // 1. Check if file still exists to prevent race condition errors
+            if (!file || !file.path) return;
+            const exists = this.app.vault.getAbstractFileByPath(file.path);
+            if (!exists) return;
+
             const cache = this.app.metadataCache.getFileCache(file);
             if (cache?.frontmatter?.research_id) {
                 const words = content.trim().split(/\s+/).length;
@@ -142,11 +190,13 @@ export default class SisyphusPlugin extends Plugin {
             }
         }, 1000, true);
 
+        // Register the event listener to actually USE the debounce function
         this.registerEvent(this.app.workspace.on('editor-change', (editor, info) => {
-            if (!info || !info.file) return;
-            debouncedUpdate(info.file, editor.getValue());
+            if (info && info.file) {
+                debouncedUpdate(info.file, editor.getValue());
+            }
         }));
-    }
+    } // <--- THIS BRACE WAS MISSING
 
     async loadStyles() {
         try {
@@ -180,6 +230,9 @@ export default class SisyphusPlugin extends Plugin {
     updateStatusBar() {
         const shield = (this.engine.isShielded() || this.engine.isResting()) ? (this.engine.isResting() ? "D" : "S") : "";
         const mCount = this.settings.dailyMissions.filter(m => m.completed).length;
+    // [NEW] Combo Indicator
+        // If combo > 1, show fire icon. Otherwise show nothing.
+        const combo = this.settings.comboCount > 1 ? ` 🔥x${this.settings.comboCount}` : "";
         this.statusBarItem.setText(`${this.settings.dailyModifier.icon} ${shield} HP${this.settings.hp} G${this.settings.gold} M${mCount}/3`);
         this.statusBarItem.style.color = this.settings.hp < 30 ? "red" : this.settings.gold < 0 ? "orange" : "";
     }

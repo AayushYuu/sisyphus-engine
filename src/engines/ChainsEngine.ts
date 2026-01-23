@@ -192,6 +192,36 @@ export class ChainsEngine {
             xpKept: xpKept
         };
     }
+  /**
+     * Handle file rename events to keep chains intact
+     * @param oldName The previous basename of the file
+     * @param newName The new basename of the file
+     */
+    handleRename(oldName: string, newName: string): void {
+        let changesMade = false;
+
+        this.settings.activeChains.forEach(chain => {
+            // Check if this chain contains the old quest name
+            const index = chain.quests.indexOf(oldName);
+            if (index !== -1) {
+                // Replace with new name
+                chain.quests[index] = newName;
+                changesMade = true;
+            }
+        });
+
+        // Also check history (optional, but good for data integrity)
+        this.settings.chainHistory.forEach(record => {
+            // If you store quest lists in history later, update them here.
+            // Currently history is just summary data, so strictly not needed yet,
+            // but good to keep in mind.
+        });
+
+        if (changesMade) {
+            // Using console log for debug, Notice might be too spammy during batch renames
+            console.log(`[Sisyphus] Updated chains for rename: ${oldName} -> ${newName}`);
+        }
+    }
 
     /**
      * Get progress of active chain

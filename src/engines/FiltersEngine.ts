@@ -15,6 +15,44 @@ export class FiltersEngine {
     constructor(settings: SisyphusSettings) {
         this.settings = settings;
     }
+  /**
+     * Handle file rename events to preserve filters
+     * @param oldName The previous basename
+     * @param newName The new basename
+     */
+    handleRename(oldName: string, newName: string): void {
+        const filterData = this.settings.questFilters[oldName];
+        
+        if (filterData) {
+            // 1. Assign data to new key
+            this.settings.questFilters[newName] = filterData;
+            
+            // 2. Delete old key
+            delete this.settings.questFilters[oldName];
+            
+            console.log(`[Sisyphus] Transferred filters: ${oldName} -> ${newName}`);
+        }
+    }
+
+    /**
+     * Garbage Collection: Clean up filters for files that no longer exist
+     * Call this sparingly (e.g., on plugin load)
+     */
+    cleanupOrphans(existingFileNames: string[]) {
+        const keys = Object.keys(this.settings.questFilters);
+        let deleted = 0;
+        
+        keys.forEach(key => {
+            if (!existingFileNames.includes(key)) {
+                delete this.settings.questFilters[key];
+                deleted++;
+            }
+        });
+        
+        if (deleted > 0) {
+            console.log(`[Sisyphus] Cleaned up ${deleted} orphaned filter entries.`);
+        }
+    }
 
     /**
      * Set filter for a specific quest
