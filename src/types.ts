@@ -254,4 +254,17 @@ export interface SisyphusSettings {
     achievements: Achievement[];
     gameWon: boolean;
     endGameDate?: string;
+
+    /** Scars: persistent across deaths (death count, best streak, bosses defeated, achievements) */
+    scars: Scar[];
+
+    /** Neural Hub canvas path (default: Active_Run/Neural_Hub.canvas) */
+    neuralHubPath: string;
+}
+
+export interface Scar {
+    id: string;
+    label: string;
+    value: string | number;
+    earnedAt: string;
 }

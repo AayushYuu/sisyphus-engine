@@ -138,7 +138,9 @@ export class SkillDetailModal extends Modal {
     plugin: SisyphusPlugin; index: number;
     constructor(app: App, plugin: SisyphusPlugin, index: number) { super(app); this.plugin=plugin; this.index=index; }
     onOpen() {
-        const { contentEl } = this; const s = this.plugin.settings.skills[this.index];
+        const { contentEl } = this;
+        const s = this.plugin.settings.skills[this.index];
+        if (!s) { contentEl.createEl("p", { text: "Skill not found." }); return; }
         contentEl.createEl("h2", { text: `Node: ${s.name}` });
         new Setting(contentEl).setName("Name").addText(t=>t.setValue(s.name).onChange(v=>s.name=v));
         new Setting(contentEl).setName("Rust Status").setDesc(`Stacks: ${s.rust}`).addButton(b=>b.setButtonText("Manual Polish").onClick(async()=>{ s.rust=0; s.xpReq=Math.floor(s.xpReq/1.1); await this.plugin.engine.save(); this.close(); new Notice("Rust polished."); }));
@@ -183,9 +185,21 @@ export class QuestTemplateModal extends Modal {
             btn.createDiv({ text: `Diff: ${template.diff} | Skill: ${template.skill}`, attr: { style: "font-size: 0.8em; opacity: 0.7; margin-top: 5px;" } });
             btn.onclick = () => {
                 let deadline = "";
-                if (template.deadline.startsWith("+")) { const hours = parseInt(template.deadline.replace("+", "").replace("h", "")); deadline = moment().add(hours, 'hours').toISOString(); } 
-                else if (template.deadline.includes(":")) { const [h, m] = template.deadline.split(":"); deadline = moment().set({ hour: parseInt(h), minute: parseInt(m) }).toISOString(); if (moment().isAfter(deadline)) deadline = moment(deadline).add(1, 'day').toISOString(); } 
-                else deadline = moment().add(24, 'hours').toISOString();
+                if (template.deadline.startsWith("+")) {
+                    const raw = template.deadline.replace(/^\+\s*/, "").replace(/\s*h(our)?s?$/i, "");
+                    const hours = parseInt(raw, 10);
+                    deadline = isNaN(hours) || hours < 0
+                        ? moment().add(24, 'hours').toISOString()
+                        : moment().add(hours, 'hours').toISOString();
+                } else if (template.deadline.includes(":")) {
+                    const [h, m] = template.deadline.split(":");
+                    const hour = parseInt(h, 10) || 0;
+                    const minute = parseInt(m, 10) || 0;
+                    deadline = moment().set({ hour, minute }).toISOString();
+                    if (moment().isAfter(deadline)) deadline = moment(deadline).add(1, 'day').toISOString();
+                } else {
+                    deadline = moment().add(24, 'hours').toISOString();
+                }
                 this.plugin.engine.createQuest(template.name, template.diff, template.skill, "None", deadline, false, "Normal", false);
                 new Notice(`Deployed: ${template.name}`);
                 this.close();
@@ -208,7 +222,11 @@ export class ResearchQuestModal extends Modal {
         const questFolder = this.app.vault.getAbstractFileByPath("Active_Run/Quests");
         if (questFolder instanceof TFolder) { questFolder.children.forEach(f => { if (f instanceof TFile && f.extension === "md") combatQuests[f.basename] = f.basename; }); }
         new Setting(contentEl).setName("Link Combat Quest").addDropdown(d => d.addOptions(combatQuests).setValue("None").onChange(v => this.linkedCombatQuest = v));
-        new Setting(contentEl).addButton(b => b.setButtonText("CREATE RESEARCH").setCta().onClick(() => { if (this.title) { this.plugin.engine.createResearchQuest(this.title, this.type, this.linkedSkill, this.linkedCombatQuest); this.close(); } }));
+        new Setting(contentEl).addButton(b => b.setButtonText("CREATE RESEARCH").setCta().onClick(async () => {
+            if (!this.title) return;
+            const res = await this.plugin.engine.createResearchQuest(this.title, this.type, this.linkedSkill, this.linkedCombatQuest);
+            if (res.success) this.close();
+        }));
     }
     onClose() { this.contentEl.empty(); }
 }
@@ -230,7 +248,7 @@ export class ResearchListModal extends Modal {
             const info = card.createEl("div"); info.innerHTML = `<code style="color:#aa64ff">${q.id}</code><br>Type: ${q.type === "survey" ? "Survey" : "Deep Dive"} | Words: ${q.wordCount}/${q.wordLimit}`; info.setAttribute("style", "font-size: 0.9em; opacity: 0.8;");
             const actions = card.createDiv(); actions.setAttribute("style", "margin-top: 8px; display: flex; gap: 5px;");
             const completeBtn = actions.createEl("button", { text: "COMPLETE" }); completeBtn.setAttribute("style", "flex: 1; padding: 5px; background: green; color: white; border: none; border-radius: 3px; cursor: pointer;"); completeBtn.onclick = () => { this.plugin.engine.completeResearchQuest(q.id, q.wordCount); this.close(); };
-            const deleteBtn = actions.createEl("button", { text: "DELETE" }); deleteBtn.setAttribute("style", "flex: 1; padding: 5px; background: red; color: white; border: none; border-radius: 3px; cursor: pointer;"); deleteBtn.onclick = () => { this.plugin.engine.deleteResearchQuest(q.id); this.close(); };
+            const deleteBtn = actions.createEl("button", { text: "DELETE" }); deleteBtn.setAttribute("style", "flex: 1; padding: 5px; background: red; color: white; border: none; border-radius: 3px; cursor: pointer;"); deleteBtn.onclick = async () => { await this.plugin.engine.deleteResearchQuest(q.id); this.close(); };
         });
         contentEl.createEl("h3", { text: "Completed Research" });
         const completed = this.plugin.settings.researchQuests.filter(q => q.completed);
@@ -269,6 +287,56 @@ export class VictoryModal extends Modal {
         const btn = contentEl.createEl("button", { text: "BEGIN NEW GAME+" }); btn.addClass("mod-cta"); btn.style.width = "100%"; btn.onclick = () => { this.close(); };
     }
     statLine(el: HTMLElement, label: string, val: string) { const line = el.createDiv({ cls: "sisy-victory-stat" }); line.innerHTML = `${label}: <span class="sisy-victory-highlight">${val}</span>`; }
+    onClose() { this.contentEl.empty(); }
+}
+
+export class DeathModal extends Modal {
+    plugin: SisyphusPlugin;
+    constructor(app: App, plugin: SisyphusPlugin) { super(app); this.plugin = plugin; }
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.addClass("sisy-death-modal");
+        contentEl.createEl("h1", { text: "YOU DIED", cls: "sisy-death-title", attr: { style: "text-align:center; color:#f55;" } });
+        contentEl.createEl("div", { text: "☠️", attr: { style: "font-size: 60px; margin: 20px 0; text-align: center;" } });
+const legacy = this.plugin.settings.legacy || { deathCount: 0, souls: 0, perks: { startGold: 0, startSkillPoints: 0, rivalDelay: 0 }, relics: [] };
+const streak = this.plugin.settings.streak || { longest: 0, current: 0, lastDate: "" };
+const stats = contentEl.createDiv({ attr: { style: "margin: 20px 0;" } });
+this.statLine(stats, "Level Reached", `${this.plugin.settings.level}`);
+this.statLine(stats, "Deaths (after this)", `${legacy.deathCount + 1}`);
+    this.statLine(stats, "Longest Streak", `${streak.longest || 0} days`);
+        contentEl.createEl("p", { text: "One must imagine Sisyphus happy. The boulder rolls back. You keep only your Scars.", attr: { style: "margin: 20px 0; font-style: italic; opacity: 0.8; text-align: center;" } });
+        const btn = contentEl.createEl("button", { text: "ACCEPT DEATH" });
+        btn.addClass("mod-cta");
+        btn.style.width = "100%";
+        btn.onclick = async () => {
+            await this.plugin.engine.triggerDeath();
+            this.close();
+        };
+        contentEl.appendChild(btn);
+    }
+    statLine(el: HTMLElement, label: string, val: string) { const line = el.createDiv({ cls: "sisy-victory-stat" }); line.innerHTML = `${label}: <span class="sisy-victory-highlight">${val}</span>`; }
+    onClose() { this.contentEl.empty(); }
+}
+
+export class ScarsModal extends Modal {
+    plugin: SisyphusPlugin;
+    constructor(app: App, plugin: SisyphusPlugin) { super(app); this.plugin = plugin; }
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.createEl("h2", { text: "🧬 SCARS" });
+        contentEl.createEl("p", { text: "What persists across deaths.", attr: { style: "opacity: 0.8; margin-bottom: 15px;" } });
+        const scars = this.plugin.settings.scars || [];
+        if (scars.length === 0) {
+            contentEl.createEl("p", { text: "No scars yet. They accumulate when you die.", cls: "sisy-empty-state" });
+        } else {
+            const list = contentEl.createDiv();
+            scars.slice().reverse().forEach((s: { label: string; value: string | number; earnedAt?: string }) => {
+                const row = list.createDiv({ attr: { style: "padding: 10px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center;" } });
+                row.createSpan({ text: `${s.label}: ${s.value}` });
+                if (s.earnedAt) row.createSpan({ text: new Date(s.earnedAt).toLocaleDateString(), attr: { style: "font-size: 0.85em; opacity: 0.7;" } });
+            });
+        }
+    }
     onClose() { this.contentEl.empty(); }
 }
 
@@ -322,7 +390,7 @@ export class TemplateManagerModal extends Modal {
         contentEl.createEl("h3", { text: "Add New Template" });
         
         new Setting(contentEl).setName("Name").addText(t => t.onChange(v => this.newName = v));
-        new Setting(contentEl).setName("Difficulty (1-5)").addText(t => t.setValue("1").onChange(v => this.newDiff = parseInt(v)));
+        new Setting(contentEl).setName("Difficulty (1-5)").addText(t => t.setValue("1").onChange(v => { const n = parseInt(v, 10); this.newDiff = isNaN(n) ? 1 : Math.min(5, Math.max(1, n)); }));
         new Setting(contentEl).setName("Skill").addText(t => t.setValue("None").onChange(v => this.newSkill = v));
         new Setting(contentEl).setName("Deadline").setDesc("Format: '10:00' or '+2h'").addText(t => t.setValue("+2h").onChange(v => this.newDeadline = v));
 
@@ -333,9 +401,9 @@ export class TemplateManagerModal extends Modal {
                 if (!this.newName) return;
                 this.plugin.settings.questTemplates.push({
                     name: this.newName,
-                    diff: this.newDiff,
-                    skill: this.newSkill,
-                    deadline: this.newDeadline
+                    diff: Math.min(5, Math.max(1, this.newDiff || 1)),
+                    skill: this.newSkill || "None",
+                    deadline: this.newDeadline || "+2h"
                 });
                 await this.plugin.saveSettings();
                 this.display(); // Refresh UI to show new item

@@ -1,6 +1,6 @@
 import { ItemView, WorkspaceLeaf, TFile, TFolder, moment, debounce } from 'obsidian';
 import SisyphusPlugin from '../main';
-import { QuestModal, ShopModal, SkillDetailModal, SkillManagerModal } from './modals';
+import { QuestModal, ShopModal, SkillDetailModal, SkillManagerModal, ScarsModal } from './modals';
 import { Skill, DailyMission } from '../types';
 import { ChartRenderer } from './charts';
 import { QuestCardRenderer } from './card';
@@ -88,6 +88,8 @@ export class PanopticonView extends ItemView {
         this.stat(hud, "RIVAL DMG", `${this.plugin.settings.rivalDmg}`);
 
         this.renderOracle(scroll);
+
+        this.renderScars(scroll);
 
         scroll.createDiv({ text: "TODAYS OBJECTIVES", cls: "sisy-section-title" });
         this.renderDailyMissions(scroll);
@@ -267,6 +269,20 @@ export class PanopticonView extends ItemView {
         if (survival < 2) survEl.addClass("sisy-prediction-bad");
     }
 
+    renderScars(scroll: HTMLElement) {
+        const scars = this.plugin.settings.scars || [];
+        if (scars.length === 0) return;
+        const div = scroll.createDiv({ cls: "sisy-scars" });
+        div.createEl("h4", { text: "🧬 SCARS" });
+        const recent = scars.slice(-3).reverse();
+        recent.forEach((s: { label: string; value: string | number }) => {
+            div.createEl("p", { text: `${s.label}: ${s.value}`, attr: { style: "font-size: 0.9em; opacity: 0.85;" } });
+        });
+        const btn = div.createEl("button", { text: "View all", cls: "sisy-btn" });
+        btn.style.marginTop = "6px";
+        btn.onclick = () => new ScarsModal(this.app, this.plugin).open();
+    }
+
     renderSkills(scroll: HTMLElement) {
         this.plugin.settings.skills.forEach((s: Skill, idx: number) => {
             const row = scroll.createDiv({ cls: "sisy-skill-row" });
@@ -277,7 +293,8 @@ export class PanopticonView extends ItemView {
             if (s.rust > 0) meta.createSpan({ text: `RUST ${s.rust}`, cls: "sisy-text-rust" });
             
             const bar = row.createDiv({ cls: "sisy-bar-bg" });
-            bar.createDiv({ cls: "sisy-bar-fill sisy-fill-blue", attr: { style: `width: ${(s.xp/s.xpReq)*100}%;` } });
+            const pct = s.xpReq > 0 ? (s.xp / s.xpReq) * 100 : 0;
+            bar.createDiv({ cls: "sisy-bar-fill sisy-fill-blue", attr: { style: `width: ${pct}%;` } });
         });
         scroll.createDiv({ text: "+ Add Node", cls: "sisy-btn", attr: { style: "width:100%; margin-top:10px;" } }).onclick = () => new SkillManagerModal(this.app, this.plugin).open();
     }
@@ -309,12 +326,14 @@ export class PanopticonView extends ItemView {
             card.createDiv({ text: m.desc, attr: { style: "font-size: 0.8em; opacity: 0.7; margin-bottom: 5px;" } });
 
             const bar = card.createDiv({ cls: "sisy-bar-bg" });
-            bar.createDiv({ cls: "sisy-bar-fill sisy-fill-green", attr: { style: `width: ${(m.progress/m.target)*100}%;` } });
+            const pct = m.target > 0 ? (m.progress / m.target) * 100 : 0;
+            bar.createDiv({ cls: "sisy-bar-fill sisy-fill-green", attr: { style: `width: ${pct}%;` } });
         });
     }
 
     renderChainSection(parent: HTMLElement) {
         const chain = this.plugin.engine.getActiveChain();
+        if (!chain) return;
         const div = parent.createDiv({ cls: "sisy-chain-container" });
         div.createEl("h3", { text: chain.name, attr: { style: "color: var(--sisy-green);" } });
         const p = this.plugin.engine.getChainProgress();
@@ -341,11 +360,12 @@ export class PanopticonView extends ItemView {
             h.createEl("span", { text: q.title, cls: "sisy-card-title" });
             card.createEl("p", { text: `Words: ${q.wordCount}/${q.wordLimit}` });
             const bar = card.createDiv({ cls: "sisy-bar-bg" });
-            bar.createDiv({ cls: "sisy-bar-fill sisy-fill-purple", attr: { style: `width:${Math.min(100, (q.wordCount/q.wordLimit)*100)}%;` } });
+            const wpct = q.wordLimit > 0 ? Math.min(100, (q.wordCount / q.wordLimit) * 100) : 0;
+            bar.createDiv({ cls: "sisy-bar-fill sisy-fill-purple", attr: { style: `width:${wpct}%;` } });
             
             const acts = card.createDiv({ cls: "sisy-actions" });
             acts.createEl("button", { text: "COMPLETE", cls: "sisy-btn mod-done sisy-action-btn" }).onclick = () => { this.plugin.engine.completeResearchQuest(q.id, q.wordCount); this.debouncedRefresh(); };
-            acts.createEl("button", { text: "DELETE", cls: "sisy-btn mod-fail sisy-action-btn" }).onclick = () => { this.plugin.engine.deleteResearchQuest(q.id); this.debouncedRefresh(); };
+            acts.createEl("button", { text: "DELETE", cls: "sisy-btn mod-fail sisy-action-btn" }).onclick = async () => { await this.plugin.engine.deleteResearchQuest(q.id); this.debouncedRefresh(); };
         });
     }
 

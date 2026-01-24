@@ -94,7 +94,7 @@ export class QuestCardRenderer {
 
             if (fm?.is_boss && fm?.boss_max_hp) {
                  const bar = card.createDiv({ cls: "sisy-bar-bg" });
-                 const pct = (fm.boss_hp / fm.boss_max_hp) * 100;
+                 const pct = ((fm.boss_hp ?? 0) / fm.boss_max_hp) * 100;
                  bar.createDiv({ cls: "sisy-bar-fill sisy-fill-red", attr: { style: `width:${pct}%;` } });
                  card.createDiv({ text: `${fm.boss_hp}/${fm.boss_max_hp} HP`, attr: { style: "text-align:center; font-size:0.8em; color:var(--sisy-red); font-weight:bold;" } });
             }

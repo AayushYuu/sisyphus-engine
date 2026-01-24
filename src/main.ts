@@ -4,7 +4,7 @@ import { SisyphusEngine, DEFAULT_MODIFIER } from './engine';
 import { AudioController } from './utils';
 import { PanopticonView, VIEW_TYPE_PANOPTICON } from "./ui/view";
 import { SisyphusSettingTab } from './settings';
-import { ResearchQuestModal, ChainBuilderModal, ResearchListModal, QuickCaptureModal, QuestTemplateModal } from "./ui/modals";
+import { ResearchQuestModal, ChainBuilderModal, ResearchListModal, QuickCaptureModal, QuestTemplateModal, QuestModal, ScarsModal } from "./ui/modals";
 
 const DEFAULT_SETTINGS: SisyphusSettings = {
     // [NEW] Default Templates
@@ -47,7 +47,9 @@ const DEFAULT_SETTINGS: SisyphusSettings = {
     bossMilestones: [],
     streak: { current: 0, longest: 0, lastDate: "" },
     achievements: [],
-    gameWon: false
+    gameWon: false,
+    scars: [],
+    neuralHubPath: "Active_Run/Neural_Hub.canvas"
 }
 
 export default class SisyphusPlugin extends Plugin {
@@ -59,7 +61,7 @@ export default class SisyphusPlugin extends Plugin {
     async onload() {
     // --- EVENT LISTENER: FILE RENAME ---
         this.registerEvent(this.app.vault.on('rename', (file, oldPath) => {
-            // We only care about Markdown files, and we need the basename
+            if (!this.engine) return;
             if (file instanceof TFile && file.extension === 'md') {
                 const newName = file.basename;
                 
@@ -90,13 +92,7 @@ export default class SisyphusPlugin extends Plugin {
             id: 'deploy-quest-hotkey',
             name: 'Deploy Quest',
             hotkeys: [{ modifiers: ["Mod"], key: "d" }],
-            callback: () => new ResearchQuestModal(this.app, this).open() // Assuming default is Research or Quest Modal?
-            // Actually, we should map this to QuestModal, but you didn't export QuestModal in modals.ts properly in the snippet. 
-            // Assuming QuestModal is available or we use ResearchQuestModal. 
-            // Reverting to ResearchQuestModal as per your import list, 
-            // OR if you have QuestModal imported, use that.
-            // Let's assume you want the standard Quest creation:
-            // callback: () => new QuestModal(this.app, this).open()
+            callback: () => new QuestModal(this.app, this).open()
         });
 
         this.addCommand({
@@ -165,7 +161,8 @@ export default class SisyphusPlugin extends Plugin {
         this.addCommand({ id: 'filter-high', name: 'Filters: High Energy', callback: () => this.engine.setFilterState("high", "any", []) });
         this.addCommand({ id: 'clear-filters', name: 'Filters: Clear', callback: () => this.engine.clearFilters() });
         this.addCommand({ id: 'game-stats', name: 'Analytics: Stats', callback: () => { const s = this.engine.getGameStats(); new Notice(`Lvl ${s.level} | Streak ${s.currentStreak}`); } });
-        
+        this.addCommand({ id: 'scars', name: 'Scars: View', callback: () => new ScarsModal(this.app, this).open() });
+
         this.addRibbonIcon('skull', 'Sisyphus Sidebar', () => this.activateView());
         // ... previous code ...
 
@@ -173,7 +170,7 @@ export default class SisyphusPlugin extends Plugin {
     this.addSettingTab(new SisyphusSettingTab(this.app, this));
 
     this.addRibbonIcon('skull', 'Sisyphus Sidebar', () => this.activateView());
-    this.registerInterval(window.setInterval(() => this.engine.checkDeadlines(), 60000));
+    this.registerInterval(window.setInterval(() => { void this.engine.checkDeadlines(); }, 60000));
 
 
     // [FIX] Debounced Word Counter (Typewriter Fix)
@@ -200,7 +197,9 @@ export default class SisyphusPlugin extends Plugin {
 
     async loadStyles() {
         try {
-            const cssFile = this.app.vault.getAbstractFileByPath(this.manifest.dir + "/styles.css");
+            const dir = (this.manifest && (this.manifest as { dir?: string }).dir) || "";
+            const path = dir ? `${dir}/styles.css` : "styles.css";
+            const cssFile = this.app.vault.getAbstractFileByPath(path);
             if (cssFile instanceof TFile) {
                 const css = await this.app.vault.read(cssFile);
                 const style = document.createElement("style");

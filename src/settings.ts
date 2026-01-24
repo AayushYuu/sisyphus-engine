@@ -1,6 +1,6 @@
 import { App, PluginSettingTab, Setting, Notice } from 'obsidian';
 import SisyphusPlugin from './main';
-import { TemplateManagerModal } from './ui/modals'; // Adjust path if needed
+import { TemplateManagerModal } from './ui/modals';
 
 export class SisyphusSettingTab extends PluginSettingTab {
     plugin: SisyphusPlugin;
@@ -104,17 +104,19 @@ export class SisyphusSettingTab extends PluginSettingTab {
                         try {
                             const text = await file.text();
                             const data = JSON.parse(text);
-                            
-                            // Basic validation check
-                            if (!data.hp || !data.skills) {
-                                new Notice("Invalid backup file.");
+
+                            const required = ['hp', 'skills', 'level', 'xpReq', 'dailyModifier', 'legacy', 'researchStats', 'filterState'];
+                            const missing = required.filter(k => data[k] == null);
+                            if (missing.length > 0) {
+                                new Notice(`Invalid backup: missing ${missing.join(', ')}`);
                                 return;
                             }
+                            if (!Array.isArray(data.scars)) data.scars = [];
+                            if (typeof data.neuralHubPath !== 'string') data.neuralHubPath = 'Active_Run/Neural_Hub.canvas';
 
                             this.plugin.settings = data;
                             await this.plugin.saveSettings();
-                            
-                            // Force engine to reload state
+
                             this.plugin.engine.trigger("update");
                             new Notice("Data imported successfully!");
                         } catch (err) {

@@ -22,10 +22,10 @@
   "comboCount": 0,
   "lastCompletionTime": 0,
   "activeBuffs": [],
-  "hp": 105,
-  "maxHp": 105,
+  "hp": 90,
+  "maxHp": 100,
   "xp": 0,
-  "gold": 0,
+  "gold": 10,
   "xpReq": 100,
   "level": 1,
   "rivalDmg": 10,
@@ -55,7 +55,7 @@
   "history": [],
   "runCount": 1,
   "lockdownUntil": "",
-  "damageTakenToday": 0,
+  "damageTakenToday": 15,
   "dailyMissions": [
     {
       "id": "synergist",
@@ -96,8 +96,8 @@
       },
       "check": "zero_inbox",
       "checkFunc": "zero_inbox",
-      "progress": 0,
-      "completed": false
+      "progress": 1,
+      "completed": true
     }
   ],
   "dailyMissionDate": "2026-01-25",
@@ -135,5 +135,7 @@
     "lastDate": ""
   },
   "achievements": [],
-  "gameWon": false
+  "gameWon": false,
+  "scars": [],
+  "neuralHubPath": "Active_Run/Neural_Hub.canvas"
 }

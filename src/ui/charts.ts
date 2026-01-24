@@ -16,11 +16,12 @@ export class ChartRenderer {
             labels.push(moment(d).format("ddd"));
         }
 
-        const maxVal = Math.max(...data, 5); 
+        const maxVal = Math.max(...data, 5);
         const points: string[] = [];
-        
+        const divisor = Math.max(1, data.length - 1);
+
         data.forEach((val, idx) => {
-            const x = (idx / (data.length - 1)) * (width - padding * 2) + padding;
+            const x = (idx / divisor) * (width - padding * 2) + padding;
             const y = height - ((val / maxVal) * (height - padding * 2)) - padding;
             points.push(`${x},${y}`);
         });

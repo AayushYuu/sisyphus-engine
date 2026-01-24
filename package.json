@@ -1,6 +1,6 @@
 {
   "name": "sisyphus-engine",
-  "version": "1.0.0",
+  "version": "2.5.0",
   "type": "module",
   "description": "Ruthless Permadeath",
   "main": "main.js",
@@ -8,7 +8,10 @@
     "build": "rollup -c rollup.config.mjs",
     "dev": "rollup -c rollup.config.mjs -w"
   },
-  "keywords": ["obsidian", "plugin"],
+  "keywords": [
+    "obsidian",
+    "plugin"
+  ],
   "author": "You",
   "license": "MIT",
   "devDependencies": {

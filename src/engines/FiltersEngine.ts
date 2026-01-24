@@ -182,7 +182,7 @@ export class FiltersEngine {
         
         for (const questName in this.settings.questFilters) {
             const filter = this.settings.questFilters[questName];
-            filter.tags.forEach((tag: string) => tags.add(tag));
+            (filter.tags || []).forEach((tag: string) => tags.add(tag));
         }
         
         return Array.from(tags).sort();

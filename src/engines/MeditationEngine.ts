@@ -200,28 +200,34 @@ export class MeditationEngine {
     }
 
     /**
-     * Delete a quest and charge gold if necessary
-     * Returns: { cost, message }
+     * Get the cost of the next deletion without mutating state.
+     * Use this to check affordability before calling applyDeletionCost.
      */
-    applyDeletionCost(): { cost: number; message: string } {
+    getDeletionCost(): { cost: number; message: string } {
         this.ensureDeletionQuotaReset();
-        
+
         let cost = 0;
         let message = "";
-        
+
         if (this.settings.questDeletionsToday >= 3) {
-            // Paid deletion
             cost = 10;
             message = `Quest deleted. Cost: -${cost}g`;
         } else {
-            // Free deletion
             const remaining = 3 - this.settings.questDeletionsToday;
             message = `Quest deleted. (${remaining - 1} free deletions remaining)`;
         }
-        
+
+        return { cost, message };
+    }
+
+    /**
+     * Apply deletion: increment quota and charge gold. Call only after checking getDeletionCost().
+     * Returns: { cost, message }
+     */
+    applyDeletionCost(): { cost: number; message: string } {
+        const { cost, message } = this.getDeletionCost();
         this.settings.questDeletionsToday++;
         this.settings.gold -= cost;
-        
         return { cost, message };
     }
 }
