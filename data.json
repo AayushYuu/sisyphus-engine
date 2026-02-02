@@ -22,24 +22,24 @@
   "comboCount": 0,
   "lastCompletionTime": 0,
   "activeBuffs": [],
-  "hp": 90,
-  "maxHp": 100,
+  "hp": 105,
+  "maxHp": 105,
   "xp": 0,
-  "gold": 10,
+  "gold": 0,
   "xpReq": 100,
   "level": 1,
   "rivalDmg": 10,
-  "lastLogin": "2026-01-25",
+  "lastLogin": "2026-02-03",
   "shieldedUntil": "",
   "restDayUntil": "",
   "skills": [],
   "dailyModifier": {
-    "name": "Rival Sabotage",
-    "desc": "Gold 0.5x.",
-    "xpMult": 1,
-    "goldMult": 0.5,
+    "name": "Adrenaline",
+    "desc": "2x XP, -5 HP/Q.",
+    "xpMult": 2,
+    "goldMult": 1,
     "priceMult": 1,
-    "icon": "🕵️"
+    "icon": "💉"
   },
   "legacy": {
     "souls": 0,
@@ -55,19 +55,33 @@
   "history": [],
   "runCount": 1,
   "lockdownUntil": "",
-  "damageTakenToday": 15,
+  "damageTakenToday": 0,
   "dailyMissions": [
     {
-      "id": "synergist",
-      "name": "🔗 Synergist",
-      "desc": "Complete quest with Primary + Secondary skill",
+      "id": "momentum",
+      "name": "🔥 Momentum",
+      "desc": "Complete 3 quests today",
+      "target": 3,
+      "reward": {
+        "xp": 20,
+        "gold": 0
+      },
+      "check": "quest_count",
+      "checkFunc": "quest_count",
+      "progress": 0,
+      "completed": false
+    },
+    {
+      "id": "risk_taker",
+      "name": "🎲 Risk Taker",
+      "desc": "Complete Difficulty 4+ quest",
       "target": 1,
       "reward": {
-        "xp": 0,
-        "gold": 10
+        "xp": 15,
+        "gold": 0
       },
-      "check": "synergy",
-      "checkFunc": "synergy",
+      "check": "hard_quest",
+      "checkFunc": "hard_quest",
       "progress": 0,
       "completed": false
     },
@@ -84,23 +98,9 @@
       "checkFunc": "skill_repeat",
       "progress": 0,
       "completed": false
-    },
-    {
-      "id": "zero_inbox",
-      "name": "🧘 Zero Inbox",
-      "desc": "Process all files in 'Scraps'",
-      "target": 1,
-      "reward": {
-        "xp": 0,
-        "gold": 10
-      },
-      "check": "zero_inbox",
-      "checkFunc": "zero_inbox",
-      "progress": 1,
-      "completed": true
     }
   ],
-  "dailyMissionDate": "2026-01-25",
+  "dailyMissionDate": "2026-02-03",
   "questsCompletedToday": 0,
   "skillUsesToday": {},
   "researchQuests": [],
