@@ -1,7 +1,7 @@
 import { App, TFile, TFolder, Notice, moment } from 'obsidian';
 import { SisyphusSettings, Skill, Modifier, DailyMission } from './types';
 import { AudioController, TinyEmitter } from './utils';
-import { ChaosModal, VictoryModal, DeathModal } from './ui/modals';
+import { ChaosModal, DeathModal } from './ui/modals';
 import { AnalyticsEngine } from './engines/AnalyticsEngine';
 import { MeditationEngine } from './engines/MeditationEngine';
 import { ResearchEngine } from './engines/ResearchEngine';
@@ -157,8 +157,7 @@ export class SisyphusEngine extends TinyEmitter {
             }
             if (mission.progress >= mission.target && !mission.completed) {
                 mission.completed = true;
-                this.settings.xp += mission.reward.xp;
-                this.settings.gold += mission.reward.gold;
+                this.grantRewards(mission.reward.xp, mission.reward.gold, `mission:${mission.id}`);
                 new Notice(`✅ Mission Complete: ${mission.name}`);
                 this.audio.playSound("success");
 
@@ -167,7 +166,7 @@ export class SisyphusEngine extends TinyEmitter {
         });
 
         if (justFinishedAll) {
-            this.settings.gold += 50;
+            this.grantRewards(0, 50, 'missions:all_complete_bonus');
             new Notice("🎉 All Missions Complete! +50 Bonus Gold");
             this.audio.playSound("success");
         }
@@ -177,7 +176,22 @@ export class SisyphusEngine extends TinyEmitter {
         return getDifficultyNum(diffLabel);
     }
 
+
+    private grantRewards(xp: number, gold: number, reason: string) {
+        if (this.plugin.kernel) {
+            this.plugin.kernel.events.emit('reward:granted', { xp, gold, reason });
+            return;
+        }
+
+        this.settings.xp += xp;
+        this.settings.gold += gold;
+    }
+
     async checkDailyLogin() {
+        if (this.plugin.kernel) {
+            this.plugin.kernel.events.emit('session:start', { now: new Date().toISOString() });
+            return;
+        }
         const today = moment().format("YYYY-MM-DD");
         if (this.settings.lastLogin) {
             const daysDiff = moment().diff(moment(this.settings.lastLogin), 'days');
@@ -247,24 +261,16 @@ export class SisyphusEngine extends TinyEmitter {
              if (chainResult.success) {
                  new Notice(chainResult.message);
                  if (chainResult.chainComplete) {
-                     this.settings.xp += chainResult.bonusXp;
+                     this.grantRewards(chainResult.bonusXp, 0, 'chain:completion_bonus');
                      new Notice(`🎉 Chain Bonus: +${chainResult.bonusXp} XP!`);
                  }
              }
         }
 
-        if (fm.is_boss) {
-            const match = file.basename.match(/BOSS_LVL(\d+)/);
-            if (match) {
-                const level = parseInt(match[1]);
-                const result = this.analyticsEngine.defeatBoss(level);
-                new Notice(result.message);
-                if (this.settings.gameWon) new VictoryModal(this.app, this.plugin).open();
-            }
+        if (!this.plugin.kernel) {
+            this.analyticsEngine.trackDailyMetrics("quest_complete", 1);
+            this.settings.researchStats.totalCombat++;
         }
-
-        this.analyticsEngine.trackDailyMetrics("quest_complete", 1);
-        this.settings.researchStats.totalCombat++;
        
         // Rewards
         let xpMult = this.settings.dailyModifier.xpMult;
@@ -285,68 +291,45 @@ export class SisyphusEngine extends TinyEmitter {
         }
         
         const skillName = fm.skill || "None";
-        const skill = this.settings.skills.find(s => s.name === skillName);
-        if (skill) {
-            skill.rust = 0;
-            skill.xpReq = Math.floor(skill.xpReq / 1.1);
-            skill.lastUsed = new Date().toISOString();
-            skill.xp += 1;
-            if (skill.xp >= skill.xpReq) { skill.level++; skill.xp = 0; new Notice(`🧠 ${skill.name} Leveled Up!`); }
-        }
-
         const secondary = fm.secondary_skill || "None";
-        if (secondary && secondary !== "None") {
-            const secSkill = this.settings.skills.find(s => s.name === secondary);
-            if (secSkill && skill) {
-                if (!skill.connections) skill.connections = [];
-                if (!skill.connections.includes(secondary)) { skill.connections.push(secondary); new Notice(`🔗 Neural Link Established`); }
-                xp += Math.floor(secSkill.level * 0.5);
-                secSkill.xp += 0.5;
-            }
-        }
 
-        this.settings.xp += xp; this.settings.gold += gold;
+        const bossMatch = fm.is_boss ? file.basename.match(/BOSS_LVL(\d+)/) : null;
+        const bossLevel = bossMatch ? parseInt(bossMatch[1]) : null;
+
+        if (this.plugin.kernel) {
+            this.plugin.kernel.events.emit('quest:completed', {
+                questId: file.basename,
+                difficulty: this.getDifficultyNumber(fm.difficulty),
+                skillName,
+                secondarySkill: secondary,
+                highStakes: !!fm.high_stakes,
+                isBoss: !!fm.is_boss,
+                bossLevel,
+                xpReward: xp,
+                goldReward: gold
+            });
+        } else {
+            this.grantRewards(xp, gold, 'quest:completed');
+        }
         
-        if (this.settings.dailyModifier.name === "Adrenaline") {
-            this.settings.hp -= 5;
-            this.settings.damageTakenToday += 5;
-            if (this.settings.damageTakenToday > 50 && !this.meditationEngine.isLockedDown()) {
-                this.meditationEngine.triggerLockdown();
-                this.trigger("lockdown");
-                new Notice("Overexertion! LOCKDOWN INITIATED.");
-            }
-            if (this.settings.hp <= 0) {
-                new DeathModal(this.app, this.plugin).open();
-                return;
-            }
-        }
-
         this.audio.playSound("success");
 
-        if (this.settings.xp >= this.settings.xpReq) {
-            this.settings.level++; 
-            this.settings.xp = 0;
-            this.settings.xpReq = Math.floor(this.settings.xpReq * 1.1); 
-            this.settings.maxHp = 100 + (this.settings.level * 5); 
-            this.settings.hp = this.settings.maxHp;
-            this.taunt("level_up");
-            
-            const msgs = this.analyticsEngine.checkBossMilestones();
-            msgs.forEach(m => new Notice(m));
-            
-            if ([10, 20, 30, 50].includes(this.settings.level)) this.spawnBoss(this.settings.level);
+        if (this.settings.hp <= 0) {
+            return;
         }
 
-        this.settings.questsCompletedToday++;
-        this.analyticsEngine.updateStreak();
-        
-        this.checkDailyMissions({ 
-            type: "complete", 
-            difficulty: this.getDifficultyNumber(fm.difficulty), 
-            skill: skillName, 
-            secondarySkill: secondary,
-            highStakes: fm.high_stakes 
-        });
+        if (!this.plugin.kernel) {
+            this.settings.questsCompletedToday++;
+            this.analyticsEngine.updateStreak();
+
+            this.checkDailyMissions({
+                type: "complete",
+                difficulty: this.getDifficultyNumber(fm.difficulty),
+                skill: skillName,
+                secondarySkill: secondary,
+                highStakes: fm.high_stakes
+            });
+        }
 
         await this.app.fileManager.processFrontMatter(file, (f) => { f.status = "completed"; f.completed_at = new Date().toISOString(); });
         
@@ -425,7 +408,6 @@ export class SisyphusEngine extends TinyEmitter {
             if (match) {
                 const level = parseInt(match[1]);
                 bossHpPenalty = getBossHpPenalty(level);
-                if (bossHpPenalty > 0) new Notice(`☠️ Boss Crush: +${bossHpPenalty} Damage`);
             }
         }
 
@@ -435,21 +417,40 @@ export class SisyphusEngine extends TinyEmitter {
             damageMult,
             bossHpPenalty
         );
-        
-        this.settings.hp -= damage;
-        this.settings.damageTakenToday += damage;
-        if (!manualAbort) this.settings.rivalDmg += 1;
 
-        this.audio.playSound("fail");
-        this.checkDailyMissions({ type: "damage" });
+        if (this.plugin.kernel) {
+            this.plugin.kernel.events.emit('quest:failed', {
+                questId: file.basename,
+                reason: manualAbort ? 'manual_abort' : 'failed',
+                damage,
+                manualAbort,
+                bossHpPenalty
+            });
+        } else {
+            this.analyticsEngine.trackDailyMetrics("quest_fail", 1);
+            this.settings.hp -= damage;
+            this.settings.damageTakenToday += damage;
+            if (!manualAbort) this.settings.rivalDmg += 1;
 
-        if (this.settings.damageTakenToday > 50) {
-            this.meditationEngine.triggerLockdown();
-            this.trigger("lockdown");
+            this.audio.playSound("fail");
+            this.checkDailyMissions({ type: "damage" });
+
+            if (this.settings.damageTakenToday > 50) {
+                this.meditationEngine.triggerLockdown();
+                this.trigger("lockdown");
+            }
+
+            if (this.settings.hp <= 0) {
+                new DeathModal(this.app, this.plugin).open();
+                return;
+            }
+
+            if (bossHpPenalty > 0) {
+                new Notice(`☠️ Boss Crush: +${bossHpPenalty} Damage`);
+            }
         }
 
         if (this.settings.hp <= 0) {
-            new DeathModal(this.app, this.plugin).open();
             return;
         }
 
@@ -536,12 +537,14 @@ deadline: ${deadlineIso}
     }
 
     async checkDeadlines() {
-        const now = moment();
-        const initialCount = this.settings.activeBuffs.length;
-        this.settings.activeBuffs = this.settings.activeBuffs.filter(b => moment(b.expiresAt).isAfter(now));
-        if (this.settings.activeBuffs.length < initialCount) {
-            new Notice("A potion effect has worn off.");
-            this.trigger("update");
+        if (!this.plugin.kernel) {
+            const now = moment();
+            const initialCount = this.settings.activeBuffs.length;
+            this.settings.activeBuffs = this.settings.activeBuffs.filter(b => moment(b.expiresAt).isAfter(now));
+            if (this.settings.activeBuffs.length < initialCount) {
+                new Notice("A potion effect has worn off.");
+                this.trigger("update");
+            }
         }
         const folder = this.app.vault.getAbstractFileByPath("Active_Run/Quests");
         if (!(folder instanceof TFolder)) return;
