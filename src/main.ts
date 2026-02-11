@@ -5,6 +5,16 @@ import { AudioController } from './utils';
 import { PanopticonView, VIEW_TYPE_PANOPTICON } from "./ui/view";
 import { SisyphusSettingTab } from './settings';
 import { ResearchQuestModal, ChainBuilderModal, ResearchListModal, QuickCaptureModal, QuestTemplateModal, QuestModal, ScarsModal } from "./ui/modals";
+import { SisyphusKernel } from './core/Kernel';
+import { GlobalConfig, StateManager } from './core/StateManager';
+import { ProgressionModule } from './modules/progression/ProgressionModule';
+import { EconomyModule } from './modules/economy/EconomyModule';
+import { SurvivalModule } from './modules/survival/SurvivalModule';
+import { CombatModule } from './modules/combat/CombatModule';
+import { ProductivityModule } from './modules/productivity/ProductivityModule';
+import { AnalyticsModule } from './modules/analytics/AnalyticsModule';
+import { RecoveryModule } from './modules/recovery/RecoveryModule';
+import { DailyLifecycleModule } from './modules/recovery/DailyLifecycleModule';
 
 const DEFAULT_SETTINGS: SisyphusSettings = {
     // [NEW] Default Templates
@@ -54,8 +64,10 @@ const DEFAULT_SETTINGS: SisyphusSettings = {
 
 export default class SisyphusPlugin extends Plugin {
     settings: SisyphusSettings;
+    config: GlobalConfig;
     statusBarItem: HTMLElement;
     engine: SisyphusEngine;
+    kernel: SisyphusKernel;
     audio: AudioController;
 
     async onload() {
@@ -138,8 +150,30 @@ export default class SisyphusPlugin extends Plugin {
         await this.loadSettings();
         
         this.loadStyles();
-        this.audio = new AudioController(this.settings.muted);
+        this.audio = new AudioController(this.config.muteAudio);
         this.engine = new SisyphusEngine(this.app, this, this.audio);
+        this.kernel = new SisyphusKernel({
+            config: this.config,
+            state: this.settings,
+            save: async (config, state) => {
+                await this.saveData({ config, state });
+            },
+            services: {
+                app: this.app,
+                engine: this.engine,
+                audio: this.audio,
+                plugin: this
+            }
+        });
+        this.kernel.registerModule(new SurvivalModule());
+        this.kernel.registerModule(new ProgressionModule());
+        this.kernel.registerModule(new EconomyModule());
+        this.kernel.registerModule(new CombatModule());
+        this.kernel.registerModule(new ProductivityModule());
+        this.kernel.registerModule(new AnalyticsModule());
+        this.kernel.registerModule(new RecoveryModule());
+        this.kernel.registerModule(new DailyLifecycleModule());
+        this.kernel.enableConfiguredModules();
 
         this.registerView(VIEW_TYPE_PANOPTICON, (leaf) => new PanopticonView(leaf, this));
 
@@ -169,8 +203,10 @@ export default class SisyphusPlugin extends Plugin {
     // --- SETTINGS TAB ---
     this.addSettingTab(new SisyphusSettingTab(this.app, this));
 
-    this.addRibbonIcon('skull', 'Sisyphus Sidebar', () => this.activateView());
-    this.registerInterval(window.setInterval(() => { void this.engine.checkDeadlines(); }, 60000));
+    this.registerInterval(window.setInterval(() => {
+        if (this.kernel) this.kernel.events.emit('clock:tick', { now: new Date().toISOString() });
+        void this.engine.checkDeadlines();
+    }, 60000));
 
 
     // [FIX] Debounced Word Counter (Typewriter Fix)
@@ -212,6 +248,7 @@ export default class SisyphusPlugin extends Plugin {
 
     async onunload() {
         this.app.workspace.detachLeavesOfType(VIEW_TYPE_PANOPTICON);
+        if (this.kernel) this.kernel.shutdown();
         if(this.audio.audioCtx) this.audio.audioCtx.close();
         const style = document.getElementById("sisyphus-styles");
         if (style) style.remove();
@@ -232,10 +269,24 @@ export default class SisyphusPlugin extends Plugin {
     // [NEW] Combo Indicator
         // If combo > 1, show fire icon. Otherwise show nothing.
         const combo = this.settings.comboCount > 1 ? ` 🔥x${this.settings.comboCount}` : "";
-        this.statusBarItem.setText(`${this.settings.dailyModifier.icon} ${shield} HP${this.settings.hp} G${this.settings.gold} M${mCount}/3`);
+        this.statusBarItem.setText(`${this.settings.dailyModifier.icon} ${shield} HP${this.settings.hp} G${this.settings.gold} M${mCount}/3${combo}`);
         this.statusBarItem.style.color = this.settings.hp < 30 ? "red" : this.settings.gold < 0 ? "orange" : "";
     }
     
-    async loadSettings() { this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData()); }
-    async saveSettings() { await this.saveData(this.settings); }
+    async loadSettings() {
+        const stateManager = new StateManager(DEFAULT_SETTINGS);
+        const migration = stateManager.migrate(await this.loadData());
+        this.config = migration.config;
+        this.settings = migration.state;
+
+        if (migration.migrated) {
+            await this.saveData(stateManager.toPersistedState(this.config, this.settings));
+        }
+    }
+
+    async saveSettings() {
+        const stateManager = new StateManager(DEFAULT_SETTINGS);
+        this.config.muteAudio = this.settings.muted;
+        await this.saveData(stateManager.toPersistedState(this.config, this.settings));
+    }
 }
