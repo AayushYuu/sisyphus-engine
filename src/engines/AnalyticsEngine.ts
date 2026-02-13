@@ -31,13 +31,13 @@ export class AnalyticsEngine {
 
     trackDailyMetrics(type: 'quest_complete' | 'quest_fail' | 'xp' | 'gold' | 'damage' | 'skill_level' | 'chain_complete', amount: number = 1) {
         const today = moment().format("YYYY-MM-DD");
-        
+
         let metric = this.settings.dayMetrics.find(m => m.date === today);
         if (!metric) {
             metric = { date: today, questsCompleted: 0, questsFailed: 0, xpEarned: 0, goldEarned: 0, damagesTaken: 0, skillsLeveled: [], chainsCompleted: 0 };
             this.settings.dayMetrics.push(metric);
         }
-        
+
         switch (type) {
             case "quest_complete": metric.questsCompleted += amount; break;
             case "quest_fail": metric.questsFailed += amount; break;
@@ -52,10 +52,10 @@ export class AnalyticsEngine {
         this.checkAchievements();
     }
 
-  updateStreak() {
+    updateStreak() {
         const today = moment().format("YYYY-MM-DD");
         const lastDate = this.settings.streak.lastDate;
-        
+
         if (lastDate !== today) {
             const yesterday = moment().subtract(1, 'day').format("YYYY-MM-DD");
             if (lastDate === yesterday) {
@@ -68,14 +68,14 @@ export class AnalyticsEngine {
                 // Broken streak
                 this.settings.streak.current = 1;
             }
-            
+
             if (this.settings.streak.current > this.settings.streak.longest) {
                 this.settings.streak.longest = this.settings.streak.current;
             }
-            
+
             this.settings.streak.lastDate = today;
         }
-        
+
         // Always check achievements
         this.checkAchievements();
     }
@@ -143,7 +143,7 @@ export class AnalyticsEngine {
     checkBossMilestones(): string[] {
         const messages: string[] = [];
         if (!this.settings.bossMilestones || this.settings.bossMilestones.length === 0) this.initializeBossMilestones();
-        
+
         this.settings.bossMilestones.forEach((boss: BossMilestone) => {
             if (this.settings.level >= boss.level && !boss.unlocked) {
                 boss.unlocked = true;
@@ -158,13 +158,13 @@ export class AnalyticsEngine {
         const boss = this.settings.bossMilestones.find((b: BossMilestone) => b.level === level);
         if (!boss) return { success: false, message: "Boss not found", xpReward: 0 };
         if (boss.defeated) return { success: false, message: "Boss already defeated", xpReward: 0 };
-        
+
         boss.defeated = true;
         boss.defeatedAt = new Date().toISOString();
         this.settings.xp += boss.xpReward;
         if (this.audioController) this.audioController.playSound("success");
         if (level === 50) this.winGame();
-        
+
         return { success: true, message: `Boss Defeated: ${boss.name}! +${boss.xpReward} XP`, xpReward: boss.xpReward };
     }
 
@@ -178,21 +178,21 @@ export class AnalyticsEngine {
         const week = moment().week();
         const startDate = moment().startOf('week').format("YYYY-MM-DD");
         const endDate = moment().endOf('week').format("YYYY-MM-DD");
-        
-        const weekMetrics = this.settings.dayMetrics.filter((m: DayMetrics) => 
+
+        const weekMetrics = this.settings.dayMetrics.filter((m: DayMetrics) =>
             moment(m.date).isBetween(moment(startDate), moment(endDate), null, '[]')
         );
-        
+
         const totalQuests = weekMetrics.reduce((sum: number, m: DayMetrics) => sum + m.questsCompleted, 0);
         const totalFailed = weekMetrics.reduce((sum: number, m: DayMetrics) => sum + m.questsFailed, 0);
         const successRate = totalQuests + totalFailed > 0 ? Math.round((totalQuests / (totalQuests + totalFailed)) * 100) : 0;
         const totalXp = weekMetrics.reduce((sum: number, m: DayMetrics) => sum + m.xpEarned, 0);
         const totalGold = weekMetrics.reduce((sum: number, m: DayMetrics) => sum + m.goldEarned, 0);
-        
-        const topSkills = this.settings.skills.sort((a: any, b: any) => (b.level - a.level)).slice(0, 3).map((s: any) => s.name);
+
+        const topSkills = [...this.settings.skills].sort((a: any, b: any) => (b.level - a.level)).slice(0, 3).map((s: any) => s.name);
         const bestDay = weekMetrics.length > 0 ? weekMetrics.reduce((max: DayMetrics, m: DayMetrics) => m.questsCompleted > max.questsCompleted ? m : max).date : startDate;
         const worstDay = weekMetrics.length > 0 ? weekMetrics.reduce((min: DayMetrics, m: DayMetrics) => m.questsFailed > min.questsFailed ? m : min).date : startDate;
-        
+
         const report: WeeklyReport = { week, startDate, endDate, totalQuests, successRate, totalXp, totalGold, topSkills, bestDay, worstDay };
         this.settings.weeklyReports.push(report);
         return report;
@@ -201,7 +201,7 @@ export class AnalyticsEngine {
     unlockAchievement(achievementId: string): boolean {
         // This is a manual override if needed, logic is mostly in checkAchievements now
         this.checkAchievements();
-        return true; 
+        return true;
     }
 
     getGameStats() {
@@ -210,7 +210,7 @@ export class AnalyticsEngine {
             currentStreak: this.settings.streak.current,
             longestStreak: this.settings.streak.longest,
             totalQuests: this.settings.dayMetrics.reduce((sum: number, m: DayMetrics) => sum + m.questsCompleted, 0),
-            totalXp: this.settings.xp + this.settings.dayMetrics.reduce((sum: number, m: DayMetrics) => sum + m.xpEarned, 0),
+            totalXp: this.settings.dayMetrics.reduce((sum: number, m: DayMetrics) => sum + m.xpEarned, 0),
             gameWon: this.settings.gameWon,
             bossesDefeated: this.settings.bossMilestones.filter((b: BossMilestone) => b.defeated).length,
             totalBosses: this.settings.bossMilestones.length

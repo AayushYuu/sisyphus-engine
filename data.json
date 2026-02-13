@@ -1,141 +1,171 @@
 {
-  "questTemplates": [
-    {
-      "name": "Morning Routine",
-      "diff": 1,
-      "skill": "Discipline",
-      "deadline": "10:00"
+  "configVersion": 1,
+  "stateVersion": 1,
+  "config": {
+    "enabledModules": [
+      "survival",
+      "progression",
+      "economy",
+      "combat",
+      "productivity",
+      "analytics",
+      "recovery",
+      "daily_lifecycle"
+    ],
+    "gameMode": "full",
+    "difficultyScale": 1,
+    "muteAudio": false
+  },
+  "state": {
+    "questTemplates": [
+      {
+        "name": "Morning Routine",
+        "diff": 1,
+        "skill": "Discipline",
+        "deadline": "10:00"
+      },
+      {
+        "name": "Deep Work Block",
+        "diff": 3,
+        "skill": "Focus",
+        "deadline": "+2h"
+      },
+      {
+        "name": "Quick Exercise",
+        "diff": 2,
+        "skill": "Health",
+        "deadline": "+12h"
+      }
+    ],
+    "comboCount": 0,
+    "lastCompletionTime": 0,
+    "activeBuffs": [],
+    "hp": 105,
+    "maxHp": 105,
+    "xp": 0,
+    "gold": 0,
+    "xpReq": 100,
+    "level": 1,
+    "rivalDmg": 10,
+    "lastLogin": "2026-02-14",
+    "shieldedUntil": "",
+    "restDayUntil": "",
+    "skills": [],
+    "dailyModifier": {
+      "name": "Clear Skies",
+      "desc": "No effects.",
+      "xpMult": 1,
+      "goldMult": 1,
+      "priceMult": 1,
+      "icon": "☀️"
     },
-    {
-      "name": "Deep Work Block",
-      "diff": 3,
-      "skill": "Focus",
-      "deadline": "+2h"
+    "legacy": {
+      "souls": 0,
+      "perks": {
+        "startGold": 0,
+        "startSkillPoints": 0,
+        "rivalDelay": 0
+      },
+      "relics": [],
+      "deathCount": 0
     },
-    {
-      "name": "Quick Exercise",
-      "diff": 2,
-      "skill": "Health",
-      "deadline": "+12h"
+    "muted": false,
+    "history": [],
+    "runCount": 1,
+    "lockdownUntil": "",
+    "damageTakenToday": 0,
+    "dailyMissions": [
+      {
+        "id": "synergist",
+        "name": "🔗 Synergist",
+        "desc": "Complete quest with Primary + Secondary skill",
+        "target": 1,
+        "reward": {
+          "xp": 0,
+          "gold": 10
+        },
+        "check": "synergy",
+        "checkFunc": "synergy",
+        "progress": 0,
+        "completed": false
+      },
+      {
+        "id": "morning_win",
+        "name": "☀️ Morning Win",
+        "desc": "Complete 1 Trivial quest before 10 AM",
+        "target": 1,
+        "reward": {
+          "xp": 0,
+          "gold": 15
+        },
+        "check": "morning_trivial",
+        "checkFunc": "morning_trivial",
+        "progress": 0,
+        "completed": false
+      },
+      {
+        "id": "specialist",
+        "name": "🎯 Specialist",
+        "desc": "Use the same skill 3 times",
+        "target": 3,
+        "reward": {
+          "xp": 15,
+          "gold": 0
+        },
+        "check": "skill_repeat",
+        "checkFunc": "skill_repeat",
+        "progress": 0,
+        "completed": false
+      }
+    ],
+    "dailyMissionDate": "2026-02-14",
+    "questsCompletedToday": 0,
+    "skillUsesToday": {},
+    "researchQuests": [],
+    "researchStats": {
+      "totalResearch": 0,
+      "totalCombat": 0,
+      "researchCompleted": 0,
+      "combatCompleted": 0
+    },
+    "lastResearchQuestId": 0,
+    "meditationCyclesCompleted": 0,
+    "questDeletionsToday": 0,
+    "lastDeletionReset": "",
+    "isMeditating": false,
+    "meditationClicksThisLockdown": 0,
+    "activeChains": [],
+    "chainHistory": [],
+    "currentChainId": "",
+    "chainQuestsCompleted": 0,
+    "questFilters": {},
+    "filterState": {
+      "activeEnergy": "any",
+      "activeContext": "any",
+      "activeTags": []
+    },
+    "dayMetrics": [],
+    "weeklyReports": [],
+    "bossMilestones": [],
+    "streak": {
+      "current": 0,
+      "longest": 0,
+      "lastDate": ""
+    },
+    "achievements": [],
+    "gameWon": false,
+    "scars": [],
+    "neuralHubPath": "Active_Run/Neural_Hub.canvas",
+    "rival": {
+      "name": "",
+      "avatar": "",
+      "personality": "aggressive",
+      "level": 1,
+      "xp": 0,
+      "xpReq": 100,
+      "damageDealt": 0,
+      "lastTaunt": "",
+      "lastTauntTime": ""
     }
-  ],
-  "comboCount": 0,
-  "lastCompletionTime": 0,
-  "activeBuffs": [],
-  "hp": 105,
-  "maxHp": 105,
-  "xp": 0,
-  "gold": 0,
-  "xpReq": 100,
-  "level": 1,
-  "rivalDmg": 10,
-  "lastLogin": "2026-02-03",
-  "shieldedUntil": "",
-  "restDayUntil": "",
-  "skills": [],
-  "dailyModifier": {
-    "name": "Adrenaline",
-    "desc": "2x XP, -5 HP/Q.",
-    "xpMult": 2,
-    "goldMult": 1,
-    "priceMult": 1,
-    "icon": "💉"
-  },
-  "legacy": {
-    "souls": 0,
-    "perks": {
-      "startGold": 0,
-      "startSkillPoints": 0,
-      "rivalDelay": 0
-    },
-    "relics": [],
-    "deathCount": 0
-  },
-  "muted": false,
-  "history": [],
-  "runCount": 1,
-  "lockdownUntil": "",
-  "damageTakenToday": 0,
-  "dailyMissions": [
-    {
-      "id": "momentum",
-      "name": "🔥 Momentum",
-      "desc": "Complete 3 quests today",
-      "target": 3,
-      "reward": {
-        "xp": 20,
-        "gold": 0
-      },
-      "check": "quest_count",
-      "checkFunc": "quest_count",
-      "progress": 0,
-      "completed": false
-    },
-    {
-      "id": "risk_taker",
-      "name": "🎲 Risk Taker",
-      "desc": "Complete Difficulty 4+ quest",
-      "target": 1,
-      "reward": {
-        "xp": 15,
-        "gold": 0
-      },
-      "check": "hard_quest",
-      "checkFunc": "hard_quest",
-      "progress": 0,
-      "completed": false
-    },
-    {
-      "id": "specialist",
-      "name": "🎯 Specialist",
-      "desc": "Use the same skill 3 times",
-      "target": 3,
-      "reward": {
-        "xp": 15,
-        "gold": 0
-      },
-      "check": "skill_repeat",
-      "checkFunc": "skill_repeat",
-      "progress": 0,
-      "completed": false
-    }
-  ],
-  "dailyMissionDate": "2026-02-03",
-  "questsCompletedToday": 0,
-  "skillUsesToday": {},
-  "researchQuests": [],
-  "researchStats": {
-    "totalResearch": 0,
-    "totalCombat": 0,
-    "researchCompleted": 0,
-    "combatCompleted": 0
-  },
-  "lastResearchQuestId": 0,
-  "meditationCyclesCompleted": 0,
-  "questDeletionsToday": 0,
-  "lastDeletionReset": "",
-  "isMeditating": false,
-  "meditationClicksThisLockdown": 0,
-  "activeChains": [],
-  "chainHistory": [],
-  "currentChainId": "",
-  "chainQuestsCompleted": 0,
-  "questFilters": {},
-  "filterState": {
-    "activeEnergy": "any",
-    "activeContext": "any",
-    "activeTags": []
-  },
-  "dayMetrics": [],
-  "weeklyReports": [],
-  "bossMilestones": [],
-  "streak": {
-    "current": 0,
-    "longest": 0,
-    "lastDate": ""
-  },
-  "achievements": [],
-  "gameWon": false,
-  "scars": [],
-  "neuralHubPath": "Active_Run/Neural_Hub.canvas"
+  }
 }

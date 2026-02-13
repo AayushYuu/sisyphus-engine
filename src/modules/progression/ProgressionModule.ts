@@ -40,7 +40,7 @@ export class ProgressionModule extends GameModule {
                     }
 
                     xp += Math.floor(secondarySkill.level * 0.5);
-                    secondarySkill.xp += 0.5;
+                    secondarySkill.xp += 1;
                 }
             }
 

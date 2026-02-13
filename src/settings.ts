@@ -1,7 +1,7 @@
 import { App, PluginSettingTab, Setting, Notice } from 'obsidian';
 import SisyphusPlugin from './main';
 import { TemplateManagerModal } from './ui/modals';
-import { StateManager } from './core/StateManager';
+import { StateManager, GAME_MODE_PRESETS, GAME_MODE_DESCRIPTIONS, GameMode } from './core/StateManager';
 
 export class SisyphusSettingTab extends PluginSettingTab {
     plugin: SisyphusPlugin;
@@ -16,6 +16,44 @@ export class SisyphusSettingTab extends PluginSettingTab {
         containerEl.empty();
 
         containerEl.createEl('h2', { text: 'Sisyphus Engine Settings' });
+
+        // --- GAME MODE SECTION ---
+        containerEl.createEl('h3', { text: 'Game Mode' });
+
+        new Setting(containerEl)
+            .setName('Active Mode')
+            .setDesc(GAME_MODE_DESCRIPTIONS[this.plugin.config.gameMode])
+            .addDropdown((dropdown) => {
+                const modes: GameMode[] = ['full', 'pacifist', 'zen', 'hardcore', 'custom'];
+                modes.forEach((mode) => {
+                    dropdown.addOption(mode, mode.charAt(0).toUpperCase() + mode.slice(1));
+                });
+                dropdown.setValue(this.plugin.config.gameMode);
+                dropdown.onChange(async (value) => {
+                    const mode = value as GameMode;
+                    this.plugin.config.gameMode = mode;
+
+                    if (mode !== 'custom') {
+                        const preset = GAME_MODE_PRESETS[mode as Exclude<GameMode, 'custom'>];
+                        const presetSet = new Set(preset);
+
+                        // Disable all, then enable preset modules
+                        this.plugin.kernel.modules.getAll().forEach((m) => {
+                            if (presetSet.has(m.id)) {
+                                try { this.plugin.kernel.modules.enable(m.id); } catch (_) { }
+                            } else {
+                                try { this.plugin.kernel.modules.disable(m.id); } catch (_) { }
+                            }
+                        });
+
+                        this.plugin.config.enabledModules = [...preset];
+                    }
+
+                    await this.plugin.saveSettings();
+                    this.plugin.engine.trigger('update');
+                    this.display(); // Refresh to update toggle states and description
+                });
+            });
 
         // --- MODULES SECTION ---
         containerEl.createEl('h3', { text: 'Modules' });
@@ -43,8 +81,13 @@ export class SisyphusSettingTab extends PluginSettingTab {
                                     .map((entry) => entry.id);
 
                                 this.plugin.config.enabledModules = enabledIds;
+
+                                // Auto-switch to 'custom' when manually toggling
+                                this.plugin.config.gameMode = 'custom';
+
                                 await this.plugin.saveSettings();
                                 this.plugin.engine.trigger('update');
+                                this.display(); // Refresh to show updated mode
                             } catch (error) {
                                 new Notice(`Failed to toggle module '${module.name}'.`);
                                 console.error(error);
@@ -52,6 +95,13 @@ export class SisyphusSettingTab extends PluginSettingTab {
                             }
                         });
                 });
+        });
+
+        // Render per-module settings for enabled modules
+        modules.forEach((module) => {
+            if (this.plugin.kernel.modules.isEnabled(module.id)) {
+                module.renderSettings(containerEl);
+            }
         });
 
         // --- GAMEPLAY SECTION ---

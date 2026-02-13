@@ -33,7 +33,7 @@ export class SurvivalModule extends GameModule {
             }
 
             if (settings.hp <= 0) {
-                new DeathModal(app, plugin).open();
+                if (app && plugin) new DeathModal(app, plugin).open();
                 return;
             }
 
@@ -60,7 +60,7 @@ export class SurvivalModule extends GameModule {
             }
 
             if (settings.hp <= 0) {
-                new DeathModal(app, plugin).open();
+                if (app && plugin) new DeathModal(app, plugin).open();
             }
         });
 

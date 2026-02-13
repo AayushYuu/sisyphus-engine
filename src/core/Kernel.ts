@@ -91,4 +91,8 @@ export class SisyphusKernel {
         this.modules.getAll().forEach((module) => module.onUnload());
         this.events.clear();
     }
+
+    isModuleEnabled(moduleId: string): boolean {
+        return this.modules.isEnabled(moduleId);
+    }
 }

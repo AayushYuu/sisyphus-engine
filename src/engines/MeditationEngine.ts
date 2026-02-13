@@ -14,6 +14,7 @@ export class MeditationEngine {
     settings: SisyphusSettings;
     audioController?: any; // Optional for 432 Hz sound
     private meditationCooldownMs = 30000; // 30 seconds
+    private meditationAudioCtx: AudioContext | null = null;
 
     constructor(settings: SisyphusSettings, audioController?: any) {
         this.settings = settings;
@@ -35,11 +36,11 @@ export class MeditationEngine {
         if (!this.isLockedDown()) {
             return { hours: 0, minutes: 0, totalMinutes: 0 };
         }
-        
+
         const totalMinutes = moment(this.settings.lockdownUntil).diff(moment(), 'minutes');
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
-        
+
         return { hours, minutes, totalMinutes };
     }
 
@@ -65,7 +66,7 @@ export class MeditationEngine {
                 lockdownReduced: false
             };
         }
-        
+
         if (this.settings.isMeditating) {
             return {
                 success: false,
@@ -75,32 +76,32 @@ export class MeditationEngine {
                 lockdownReduced: false
             };
         }
-        
+
         this.settings.isMeditating = true;
         this.settings.meditationClicksThisLockdown++;
-        
+
         // Play healing frequency
         this.playMeditationSound();
-        
+
         const remaining = 10 - this.settings.meditationClicksThisLockdown;
         let lockdownReduced = false;
-        
+
         // Check if 10 cycles complete
         if (this.settings.meditationClicksThisLockdown >= 10) {
             const reducedTime = moment(this.settings.lockdownUntil).subtract(5, 'hours');
             this.settings.lockdownUntil = reducedTime.toISOString();
             this.settings.meditationClicksThisLockdown = 0;
             lockdownReduced = true;
-            
+
             if (this.audioController?.playSound) {
                 this.audioController.playSound("success");
             }
-            
+
             // Auto-reset meditation flag after cooldown
             setTimeout(() => {
                 this.settings.isMeditating = false;
             }, this.meditationCooldownMs);
-            
+
             return {
                 success: true,
                 cyclesDone: 0,
@@ -109,12 +110,12 @@ export class MeditationEngine {
                 lockdownReduced: true
             };
         }
-        
+
         // Auto-reset meditation flag after cooldown
         setTimeout(() => {
             this.settings.isMeditating = false;
         }, this.meditationCooldownMs);
-        
+
         return {
             success: true,
             cyclesDone: this.settings.meditationClicksThisLockdown,
@@ -129,18 +130,21 @@ export class MeditationEngine {
      */
     private playMeditationSound() {
         try {
-            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            if (!this.meditationAudioCtx || this.meditationAudioCtx.state === 'closed') {
+                this.meditationAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            }
+            const audioContext = this.meditationAudioCtx;
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
-            
+
             oscillator.frequency.value = 432;
             oscillator.type = "sine";
             gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
             gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
-            
+
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
-            
+
             oscillator.start(audioContext.currentTime);
             oscillator.stop(audioContext.currentTime + 1);
         } catch (e) {
@@ -155,7 +159,7 @@ export class MeditationEngine {
         const cyclesDone = this.settings.meditationClicksThisLockdown;
         const cyclesRemaining = Math.max(0, 10 - cyclesDone);
         const timeReduced = (10 - cyclesRemaining) * 30; // 30 min per cycle
-        
+
         return {
             cyclesDone,
             cyclesRemaining,
@@ -168,7 +172,7 @@ export class MeditationEngine {
      */
     private ensureDeletionQuotaReset() {
         const today = moment().format("YYYY-MM-DD");
-        
+
         if (this.settings.lastDeletionReset !== today) {
             this.settings.lastDeletionReset = today;
             this.settings.questDeletionsToday = 0;
@@ -188,10 +192,10 @@ export class MeditationEngine {
      */
     getDeletionQuota(): { free: number; paid: number; remaining: number } {
         this.ensureDeletionQuotaReset();
-        
+
         const remaining = Math.max(0, 3 - this.settings.questDeletionsToday);
         const paid = Math.max(0, this.settings.questDeletionsToday - 3);
-        
+
         return {
             free: remaining,
             paid: paid,

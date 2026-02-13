@@ -4,6 +4,10 @@ import { QuestModal, ShopModal, SkillDetailModal, SkillManagerModal, ScarsModal 
 import { Skill, DailyMission } from '../types';
 import { ChartRenderer } from './charts';
 import { QuestCardRenderer } from './card';
+import { renderEmptyState, showToast } from './effects';
+import { SkillTreeRenderer } from './skilltree';
+import { RivalEngine } from '../engines/RivalEngine';
+import { ProfileModal } from './profile';
 
 export const VIEW_TYPE_PANOPTICON = "sisyphus-panopticon";
 
@@ -12,13 +16,19 @@ export class PanopticonView extends ItemView {
     draggedFile: TFile | null = null;
     selectMode: boolean = false;
     selectedQuests: Set<TFile> = new Set();
-    
+
     private observer: IntersectionObserver | null = null;
     private currentQuestList: TFile[] = [];
     private renderedCount: number = 0;
     private readonly BATCH_SIZE = 20;
 
     private debouncedRefresh = debounce(this.refresh.bind(this), 50, true);
+    private boundShowUndoToast = (name: string) => this.showUndoToast(name);
+
+    /** Check if a kernel module is enabled */
+    private isModEnabled(id: string): boolean {
+        return this.plugin.kernel?.isModuleEnabled(id) ?? false;
+    }
 
     constructor(leaf: WorkspaceLeaf, plugin: SisyphusPlugin) {
         super(leaf);
@@ -29,15 +39,15 @@ export class PanopticonView extends ItemView {
     getDisplayText() { return "Eye Sisyphus"; }
     getIcon() { return "skull"; }
 
-    async onOpen() { 
-        this.refresh(); 
-        this.plugin.engine.on('update', this.debouncedRefresh); 
-        this.plugin.engine.on('undo:show', (name: string) => this.showUndoToast(name));
+    async onOpen() {
+        this.refresh();
+        this.plugin.engine.on('update', this.debouncedRefresh);
+        this.plugin.engine.on('undo:show', this.boundShowUndoToast);
     }
 
     async onClose() {
         this.plugin.engine.off('update', this.debouncedRefresh);
-        this.plugin.engine.off('undo:show', this.showUndoToast.bind(this));
+        this.plugin.engine.off('undo:show', this.boundShowUndoToast);
         if (this.observer) this.observer.disconnect();
     }
 
@@ -48,7 +58,7 @@ export class PanopticonView extends ItemView {
         if (scrollArea) lastScroll = scrollArea.scrollTop;
 
         // [FIX] Measure width BEFORE wiping DOM so we can draw charts off-screen
-        const currentWidth = this.contentEl.clientWidth || 300; 
+        const currentWidth = this.contentEl.clientWidth || 300;
 
         const itemsToRestore = Math.max(this.renderedCount, this.BATCH_SIZE);
 
@@ -59,8 +69,8 @@ export class PanopticonView extends ItemView {
 
         // 2. Clean & Prep
         if (this.observer) { this.observer.disconnect(); this.observer = null; }
-        this.prepareQuests(); 
-        this.renderedCount = 0; 
+        this.prepareQuests();
+        this.renderedCount = 0;
 
         // 3. Build Buffer
         const buffer = document.createDocumentFragment();
@@ -73,35 +83,62 @@ export class PanopticonView extends ItemView {
         header.createEl("h2", { text: "Eye SISYPHUS OS" });
         const soundBtn = header.createEl("span", { text: this.plugin.settings.muted ? "🔇" : "🔊", cls: "sisy-sound-btn" });
         soundBtn.onclick = async () => {
-             this.plugin.settings.muted = !this.plugin.settings.muted;
-             this.plugin.audio.setMuted(this.plugin.settings.muted);
-             await this.plugin.saveSettings();
-             this.debouncedRefresh();
+            this.plugin.settings.muted = !this.plugin.settings.muted;
+            this.plugin.audio.setMuted(this.plugin.settings.muted);
+            await this.plugin.saveSettings();
+            this.debouncedRefresh();
         };
 
         this.renderAlerts(scroll);
 
         const hud = scroll.createDiv({ cls: "sisy-hud" });
-        this.stat(hud, "HEALTH", `${this.plugin.settings.hp}/${this.plugin.settings.maxHp}`, this.plugin.settings.hp < 30 ? "sisy-critical" : "");
-        this.stat(hud, "GOLD", `${this.plugin.settings.gold}`, this.plugin.settings.gold < 0 ? "sisy-val-debt" : "");
-        this.stat(hud, "LEVEL", `${this.plugin.settings.level}`);
-        this.stat(hud, "RIVAL DMG", `${this.plugin.settings.rivalDmg}`);
+        const weekComp = ChartRenderer.getWeekComparison(this.plugin.settings.dayMetrics);
+        if (this.isModEnabled('survival')) {
+            this.statWithSparkline(hud, "HEALTH", `${this.plugin.settings.hp}/${this.plugin.settings.maxHp}`, this.plugin.settings.hp < 30 ? "sisy-critical" : "", undefined, undefined);
+        }
+        if (this.isModEnabled('economy')) {
+            const goldComp = weekComp.find(c => c.label === 'Gold');
+            this.statWithSparkline(hud, "GOLD", `${this.plugin.settings.gold}`, this.plugin.settings.gold < 0 ? "sisy-val-debt" : "",
+                this.getLast7(d => d.goldEarned), goldComp ? { text: goldComp.delta, up: goldComp.up } : undefined, 'var(--sisy-gold)');
+        }
+        if (this.isModEnabled('progression')) {
+            const xpComp = weekComp.find(c => c.label === 'XP');
+            this.statWithSparkline(hud, "LEVEL", `${this.plugin.settings.level}`, '',
+                this.getLast7(d => d.xpEarned), xpComp ? { text: xpComp.delta, up: xpComp.up } : undefined, 'var(--sisy-blue)');
+        }
+        if (this.isModEnabled('combat')) {
+            const qComp = weekComp.find(c => c.label === 'Quests');
+            this.statWithSparkline(hud, "QUESTS", `${this.plugin.settings.questsCompletedToday} today`, '',
+                this.getLast7(d => d.questsCompleted), qComp ? { text: qComp.delta, up: qComp.up } : undefined, 'var(--sisy-green)');
+        }
 
-        this.renderOracle(scroll);
+        if (this.isModEnabled('survival')) {
+            this.renderOracle(scroll);
+            this.renderScars(scroll);
+        }
 
-        this.renderScars(scroll);
-
-        scroll.createDiv({ text: "TODAYS OBJECTIVES", cls: "sisy-section-title" });
-        this.renderDailyMissions(scroll);
+        if (this.isModEnabled('productivity')) {
+            scroll.createDiv({ text: "TODAYS OBJECTIVES", cls: "sisy-section-title" });
+            this.renderDailyMissions(scroll);
+        }
 
         const ctrls = scroll.createDiv({ cls: "sisy-controls" });
         ctrls.createEl("button", { text: "DEPLOY", cls: "sisy-btn mod-cta" }).onclick = () => new QuestModal(this.app, this.plugin).open();
-        ctrls.createEl("button", { text: "SHOP", cls: "sisy-btn" }).onclick = () => new ShopModal(this.app, this.plugin).open();
-        ctrls.createEl("button", { text: "FOCUS", cls: "sisy-btn" }).onclick = () => this.plugin.audio.toggleBrownNoise();
-        
-        const selBtn = ctrls.createEl("button", { 
-            text: this.selectMode ? `CANCEL (${this.selectedQuests.size})` : "SELECT", 
-            cls: "sisy-btn" 
+        if (this.isModEnabled('economy')) {
+            ctrls.createEl("button", { text: "SHOP", cls: "sisy-btn" }).onclick = () => new ShopModal(this.app, this.plugin).open();
+        }
+        const focusLabel = this.plugin.pomodoro.isRunning()
+            ? `⏱ ${this.plugin.pomodoro.formatTime()}`
+            : 'FOCUS';
+        ctrls.createEl('button', { text: focusLabel, cls: 'sisy-btn' }).onclick = () => {
+            if (this.plugin.pomodoro.isRunning()) this.plugin.pomodoro.pause();
+            else this.plugin.pomodoro.start();
+            this.debouncedRefresh();
+        };
+
+        const selBtn = ctrls.createEl("button", {
+            text: this.selectMode ? `CANCEL (${this.selectedQuests.size})` : "SELECT",
+            cls: "sisy-btn"
         });
         if (this.selectMode) selBtn.addClass("sisy-filter-active");
         selBtn.onclick = () => {
@@ -110,36 +147,95 @@ export class PanopticonView extends ItemView {
             this.refresh();
         };
 
-        scroll.createDiv({ text: "FILTER CONTROLS", cls: "sisy-section-title" });
-        this.renderFilterBar(scroll);
+        if (this.isModEnabled('productivity')) {
+            scroll.createDiv({ text: "FILTER CONTROLS", cls: "sisy-section-title" });
+            this.renderFilterBar(scroll);
 
-        if (this.plugin.engine.getActiveChain()) {
-            scroll.createDiv({ text: "ACTIVE CHAIN", cls: "sisy-section-title" });
-            this.renderChainSection(scroll);
+            if (this.plugin.engine.getActiveChain()) {
+                scroll.createDiv({ text: "ACTIVE CHAIN", cls: "sisy-section-title" });
+                this.renderChainSection(scroll);
+            }
+
+            scroll.createDiv({ text: "RESEARCH LIBRARY", cls: "sisy-section-title" });
+            this.renderResearchSection(scroll);
         }
 
-        scroll.createDiv({ text: "RESEARCH LIBRARY", cls: "sisy-section-title" });
-        this.renderResearchSection(scroll);
+        if (this.isModEnabled('analytics')) {
+            scroll.createDiv({ text: "ANALYTICS", cls: "sisy-section-title" });
+            const analyticsContainer = scroll.createDiv({ cls: "sisy-analytics" });
+            this.setupAnalyticsStructure(analyticsContainer);
+            this.renderAnalyticsCharts(analyticsContainer, currentWidth);
 
-        scroll.createDiv({ text: "ANALYTICS", cls: "sisy-section-title" });
-        const analyticsContainer = scroll.createDiv({ cls: "sisy-analytics" });
-        this.setupAnalyticsStructure(analyticsContainer);
-        
-        // [FIX] Render Charts NOW, into the buffer, using the captured width
-        // This ensures they are fully drawn before the user sees them.
-        this.renderAnalyticsCharts(analyticsContainer, currentWidth);
+            // GitHub Heatmap
+            analyticsContainer.createEl('h4', { text: 'Contribution Heatmap (365 Days)' });
+            const heatContainer = analyticsContainer.createDiv({ cls: 'sisy-chart-container-heat' });
+            ChartRenderer.renderGitHubHeatmap(heatContainer, this.plugin.settings.dayMetrics);
+
+            // Time-of-day chart
+            analyticsContainer.createEl('h4', { text: 'Productivity by Hour' });
+            const todContainer = analyticsContainer.createDiv();
+            ChartRenderer.renderTimeOfDay(todContainer, this.plugin.settings.dayMetrics);
+
+            // Week-over-week comparison
+            analyticsContainer.createEl('h4', { text: 'This Week vs Last Week' });
+            const compGrid = analyticsContainer.createDiv({ cls: 'sisy-week-compare' });
+            weekComp.forEach(c => {
+                const item = compGrid.createDiv({ cls: 'sisy-week-compare-item' });
+                item.createDiv({ text: c.label, cls: 'sisy-week-compare-label' });
+                item.createDiv({ text: String(c.thisWeek), cls: 'sisy-week-compare-val' });
+                const delta = item.createDiv({ text: c.delta, cls: `sisy-stat-delta ${c.up ? 'sisy-stat-delta-up' : 'sisy-stat-delta-down'}` });
+            });
+        }
+
+        // Trophy shelf
+        if (this.isModEnabled('analytics')) {
+            const unlocked = (this.plugin.settings.achievements || []).filter(a => a.unlocked);
+            if (unlocked.length > 0) {
+                scroll.createDiv({ text: `TROPHIES (${unlocked.length})`, cls: 'sisy-section-title' });
+                const shelf = scroll.createDiv({ cls: 'sisy-trophy-shelf' });
+                const sorted = [...unlocked].sort((a, b) => {
+                    const order: Record<string, number> = { legendary: 0, epic: 1, rare: 2, common: 3 };
+                    return (order[a.rarity] ?? 4) - (order[b.rarity] ?? 4);
+                });
+                sorted.slice(0, 8).forEach(ach => {
+                    const icons: Record<string, string> = { common: '🏅', rare: '💎', epic: '👑', legendary: '⭐' };
+                    const item = shelf.createDiv({ text: `${icons[ach.rarity] || '🏆'} ${ach.name}`, cls: `sisy-trophy-item sisy-trophy-${ach.rarity}` });
+                    item.setAttribute('title', ach.description);
+                });
+            }
+        }
+
+        // Rival HUD
+        if (this.isModEnabled('combat') && this.plugin.settings.rival?.name) {
+            scroll.createDiv({ text: 'RIVAL', cls: 'sisy-section-title' });
+            RivalEngine.renderRivalHUD(scroll, this.plugin.settings);
+        }
 
         scroll.createDiv({ text: "ACTIVE THREATS", cls: "sisy-section-title" });
         const questContainer = scroll.createDiv({ cls: "sisy-quest-container" });
         this.renderQuestBatch(questContainer, itemsToRestore);
 
-        scroll.createDiv({ text: "NEURAL HUB", cls: "sisy-section-title" });
-        this.renderSkills(scroll);
+        if (this.isModEnabled('progression')) {
+            scroll.createDiv({ text: "NEURAL HUB", cls: "sisy-section-title" });
+            const skillContainer = scroll.createDiv();
+            SkillTreeRenderer.render(skillContainer, this.plugin.settings.skills, (idx) => {
+                new SkillDetailModal(this.app, this.plugin, idx).open();
+            });
+            scroll.createDiv({ text: "+ Add Node", cls: "sisy-btn", attr: { style: "width:100%; margin-top:10px;" } }).onclick = () => new SkillManagerModal(this.app, this.plugin).open();
+
+            // Skill Radar Chart
+            if (this.plugin.settings.skills.length >= 3) {
+                scroll.createDiv({ text: 'SKILL PROFILE', cls: 'sisy-section-title' });
+                const radarWrap = scroll.createDiv({ cls: 'sisy-profile-radar' });
+                const sorted = [...this.plugin.settings.skills].sort((a, b) => b.level - a.level);
+                ChartRenderer.renderRadar(radarWrap, sorted);
+            }
+        }
 
         const footer = container.createDiv({ cls: "sisy-quick-capture" });
         const input = footer.createEl("input", { cls: "sisy-quick-input", placeholder: "Mission /1...5" });
         if (isQuickInput) input.value = quickInputValue;
-        
+
         input.onkeydown = async (e) => {
             if (e.key === 'Enter' && input.value.trim()) {
                 this.plugin.engine.parseQuickInput(input.value.trim());
@@ -158,14 +254,14 @@ export class PanopticonView extends ItemView {
             const newInput = this.contentEl.querySelector(".sisy-quick-input") as HTMLInputElement;
             if (newInput) {
                 newInput.focus();
-                const len = newInput.value.length; 
+                const len = newInput.value.length;
                 newInput.setSelectionRange(len, len);
             }
         }
 
         if (lastScroll > 0) {
             const newScroll = this.contentEl.querySelector(".sisy-scroll-area");
-            if(newScroll) newScroll.scrollTop = lastScroll;
+            if (newScroll) newScroll.scrollTop = lastScroll;
         }
     }
 
@@ -175,7 +271,7 @@ export class PanopticonView extends ItemView {
 
         if (folder instanceof TFolder) {
             let files = folder.children.filter(f => f instanceof TFile) as TFile[];
-            files = this.plugin.engine.filtersEngine.filterQuests(files) as TFile[]; 
+            files = this.plugin.engine.filtersEngine.filterQuests(files).filter((f): f is TFile => f instanceof TFile);
             files.sort((a, b) => {
                 const fmA = this.app.metadataCache.getFileCache(a)?.frontmatter;
                 const fmB = this.app.metadataCache.getFileCache(b)?.frontmatter;
@@ -185,7 +281,7 @@ export class PanopticonView extends ItemView {
                 if (fmA?.is_boss !== fmB?.is_boss) return (fmB?.is_boss ? 1 : 0) - (fmA?.is_boss ? 1 : 0);
                 const dateA = fmA?.deadline ? moment(fmA.deadline).valueOf() : 9999999999999;
                 const dateB = fmB?.deadline ? moment(fmB.deadline).valueOf() : 9999999999999;
-                return dateA - dateB; 
+                return dateA - dateB;
             });
             this.currentQuestList = files;
         }
@@ -193,10 +289,7 @@ export class PanopticonView extends ItemView {
 
     renderQuestBatch(container: HTMLElement, batchSize: number = this.BATCH_SIZE) {
         if (this.currentQuestList.length === 0) {
-            const idle = container.createDiv({ text: "System Idle.", cls: "sisy-empty-state" });
-            const ctaBtn = idle.createEl("button", { text: "[DEPLOY QUEST]", cls: "sisy-btn mod-cta" });
-            ctaBtn.style.marginTop = "10px";
-            ctaBtn.onclick = () => new QuestModal(this.app, this.plugin).open();
+            renderEmptyState(container, 'quests', '[DEPLOY QUEST]', () => new QuestModal(this.app, this.plugin).open());
             return;
         }
 
@@ -222,18 +315,18 @@ export class PanopticonView extends ItemView {
         const g = parent.createDiv({ cls: "sisy-hud" });
         this.stat(g, "Streak", String(stats.currentStreak));
         this.stat(g, "Today", String(this.plugin.settings.questsCompletedToday));
-        
+
         parent.createEl("h4", { text: "Activity (7 Days)" });
-        parent.createDiv({ cls: "sisy-chart-container-line" }); 
+        parent.createDiv({ cls: "sisy-chart-container-line" });
         parent.createEl("h4", { text: "Heatmap" });
-        parent.createDiv({ cls: "sisy-chart-container-heat" }); 
+        parent.createDiv({ cls: "sisy-chart-container-heat" });
     }
 
     // [FIX] Accept widthOverride to enable off-screen rendering
     renderAnalyticsCharts(parent: HTMLElement, widthOverride?: number) {
         const lineContainer = parent.querySelector(".sisy-chart-container-line") as HTMLElement;
         const heatContainer = parent.querySelector(".sisy-chart-container-heat") as HTMLElement;
-        
+
         if (lineContainer) {
             lineContainer.empty();
             ChartRenderer.renderLineChart(lineContainer, this.plugin.settings.dayMetrics, widthOverride);
@@ -287,11 +380,11 @@ export class PanopticonView extends ItemView {
         this.plugin.settings.skills.forEach((s: Skill, idx: number) => {
             const row = scroll.createDiv({ cls: "sisy-skill-row" });
             row.onclick = () => new SkillDetailModal(this.app, this.plugin, idx).open();
-            
+
             const meta = row.createDiv({ cls: "sisy-skill-meta" });
             meta.createSpan({ text: `${s.name} (Lvl ${s.level})` });
             if (s.rust > 0) meta.createSpan({ text: `RUST ${s.rust}`, cls: "sisy-text-rust" });
-            
+
             const bar = row.createDiv({ cls: "sisy-bar-bg" });
             const pct = s.xpReq > 0 ? (s.xp / s.xpReq) * 100 : 0;
             bar.createDiv({ cls: "sisy-bar-fill sisy-fill-blue", attr: { style: `width: ${pct}%;` } });
@@ -303,26 +396,26 @@ export class PanopticonView extends ItemView {
         if (!this.selectMode || this.selectedQuests.size === 0) return;
         const bar = parent.createDiv({ cls: "sisy-bulk-bar" });
         bar.createSpan({ text: `${this.selectedQuests.size} Selected`, attr: { style: "align-self:center; font-weight:bold; color: white;" } });
-        
+
         const btnC = bar.createEl("button", { text: "COMPLETE ALL", cls: "sisy-btn mod-done" });
         btnC.onclick = async () => { for (const f of this.selectedQuests) await this.plugin.engine.completeQuest(f); this.selectedQuests.clear(); this.selectMode = false; this.debouncedRefresh(); };
-        
+
         const btnD = bar.createEl("button", { text: "DELETE ALL", cls: "sisy-btn mod-fail" });
         btnD.onclick = async () => { for (const f of this.selectedQuests) await this.plugin.engine.deleteQuest(f); this.selectedQuests.clear(); this.selectMode = false; this.debouncedRefresh(); };
     }
 
     renderDailyMissions(parent: HTMLElement) {
         const missions = this.plugin.settings.dailyMissions || [];
-        if (missions.length === 0) { parent.createDiv({ text: "No missions.", cls: "sisy-empty-state" }); return; }
+        if (missions.length === 0) { renderEmptyState(parent, 'missions'); return; }
         const missionsDiv = parent.createDiv();
         missions.forEach((m: DailyMission) => {
             const card = missionsDiv.createDiv({ cls: "sisy-mission-card" });
             if (m.completed) card.addClass("sisy-mission-completed");
-            
+
             const h = card.createDiv({ cls: "sisy-card-top" });
             h.createEl("span", { text: m.name, cls: "sisy-card-title" });
             h.createEl("span", { text: `${m.progress}/${m.target}`, attr: { style: "font-weight: bold;" } });
-            
+
             card.createDiv({ text: m.desc, attr: { style: "font-size: 0.8em; opacity: 0.7; margin-bottom: 5px;" } });
 
             const bar = card.createDiv({ cls: "sisy-bar-bg" });
@@ -339,9 +432,9 @@ export class PanopticonView extends ItemView {
         const p = this.plugin.engine.getChainProgress();
         const b = div.createDiv({ cls: "sisy-bar-bg" });
         b.createDiv({ cls: "sisy-bar-fill sisy-fill-green", attr: { style: `width:${p.percent}%;` } });
-        
+
         const list = div.createDiv({ attr: { style: "margin: 10px 0; font-size: 0.9em;" } });
-        chain.quests.forEach((q, i) => list.createEl("p", { text: `[${i < p.completed ? "OK" : ".."}] ${q}`, attr: { style: i===p.completed ? "font-weight:bold" : "opacity:0.5" } }));
+        chain.quests.forEach((q, i) => list.createEl("p", { text: `[${i < p.completed ? "OK" : ".."}] ${q}`, attr: { style: i === p.completed ? "font-weight:bold" : "opacity:0.5" } }));
         div.createEl("button", { text: "BREAK CHAIN", cls: "sisy-btn mod-fail", attr: { style: "width:100%; margin-top:10px;" } }).onclick = async () => { await this.plugin.engine.breakChain(); this.debouncedRefresh(); };
     }
 
@@ -349,11 +442,11 @@ export class PanopticonView extends ItemView {
         const research = this.plugin.settings.researchQuests || [];
         const active = research.filter(q => !q.completed);
         const stats = this.plugin.engine.getResearchRatio();
-        
+
         const statsDiv = parent.createDiv({ cls: "sisy-research-stats sisy-card" });
         statsDiv.createEl("p", { text: `Research Ratio: ${stats.combat}:${stats.research}` });
-        
-        if (active.length === 0) parent.createDiv({ text: "No active research.", cls: "sisy-empty-state" });
+
+        if (active.length === 0) renderEmptyState(parent, 'research');
         else active.forEach((q: any) => {
             const card = parent.createDiv({ cls: "sisy-research-card" });
             const h = card.createDiv({ cls: "sisy-card-top" });
@@ -362,7 +455,7 @@ export class PanopticonView extends ItemView {
             const bar = card.createDiv({ cls: "sisy-bar-bg" });
             const wpct = q.wordLimit > 0 ? Math.min(100, (q.wordCount / q.wordLimit) * 100) : 0;
             bar.createDiv({ cls: "sisy-bar-fill sisy-fill-purple", attr: { style: `width:${wpct}%;` } });
-            
+
             const acts = card.createDiv({ cls: "sisy-actions" });
             acts.createEl("button", { text: "COMPLETE", cls: "sisy-btn mod-done sisy-action-btn" }).onclick = () => { this.plugin.engine.completeResearchQuest(q.id, q.wordCount); this.debouncedRefresh(); };
             acts.createEl("button", { text: "DELETE", cls: "sisy-btn mod-fail sisy-action-btn" }).onclick = async () => { await this.plugin.engine.deleteResearchQuest(q.id); this.debouncedRefresh(); };
@@ -372,7 +465,7 @@ export class PanopticonView extends ItemView {
     renderFilterBar(parent: HTMLElement) {
         const getFreshState = () => this.plugin.settings.filterState;
         const d = parent.createDiv({ cls: "sisy-filter-bar" });
-        
+
         const addRow = (l: string, opts: string[], curr: string, cb: any) => {
             const r = d.createDiv({ cls: "sisy-filter-row" });
             r.createSpan({ text: l, cls: "sisy-filter-label" });
@@ -384,41 +477,66 @@ export class PanopticonView extends ItemView {
         };
 
         const f = getFreshState();
-        addRow("Energy:", ["any", "high", "medium"], f.activeEnergy, (v:any)=> { 
+        addRow("Energy:", ["any", "high", "medium"], f.activeEnergy, (v: any) => {
             const s = getFreshState();
             const newVal = (s.activeEnergy === v && v !== "any") ? "any" : v;
-            this.plugin.engine.setFilterState(newVal, s.activeContext, s.activeTags); 
-            this.debouncedRefresh(); 
+            this.plugin.engine.setFilterState(newVal, s.activeContext, s.activeTags);
+            this.debouncedRefresh();
         });
-        addRow("Context:", ["any", "home", "office"], f.activeContext, (v:any)=> { 
+        addRow("Context:", ["any", "home", "office"], f.activeContext, (v: any) => {
             const s = getFreshState();
             const newVal = (s.activeContext === v && v !== "any") ? "any" : v;
-            this.plugin.engine.setFilterState(s.activeEnergy, newVal, s.activeTags); 
-            this.debouncedRefresh(); 
+            this.plugin.engine.setFilterState(s.activeEnergy, newVal, s.activeTags);
+            this.debouncedRefresh();
         });
-        
+
         d.createEl("button", { text: "CLEAR", cls: "sisy-btn mod-fail", attr: { style: "width:100%; margin-top:5px;" } }).onclick = () => { this.plugin.engine.clearFilters(); this.debouncedRefresh(); };
     }
 
     stat(p: HTMLElement, label: string, val: string, cls: string = "") {
-        const b = p.createDiv({ cls: "sisy-stat-box" }); 
+        const b = p.createDiv({ cls: "sisy-stat-box" });
         if (cls) b.addClass(cls);
         b.createDiv({ text: label, cls: "sisy-stat-label" });
         b.createDiv({ text: val, cls: "sisy-stat-val" });
     }
 
+    /** Stat box with optional sparkline and week-over-week delta */
+    statWithSparkline(p: HTMLElement, label: string, val: string, cls: string = '',
+        sparkData?: number[], delta?: { text: string; up: boolean }, sparkColor?: string) {
+        const b = p.createDiv({ cls: 'sisy-stat-box' });
+        if (cls) b.addClass(cls);
+        b.createDiv({ text: label, cls: 'sisy-stat-label' });
+        b.createDiv({ text: val, cls: 'sisy-stat-val' });
+        if (delta) {
+            b.createDiv({ text: delta.text, cls: `sisy-stat-delta ${delta.up ? 'sisy-stat-delta-up' : 'sisy-stat-delta-down'}` });
+        }
+        if (sparkData && sparkData.length > 1) {
+            const sparkWrap = b.createDiv({ cls: 'sisy-stat-sparkline' });
+            ChartRenderer.renderSparkline(sparkWrap, sparkData, sparkColor || 'var(--sisy-blue)');
+        }
+    }
+
+    /** Get last 7 days of a metric */
+    getLast7(accessor: (d: any) => number): number[] {
+        const result: number[] = [];
+        for (let i = 6; i >= 0; i--) {
+            const date = moment().subtract(i, 'days').format('YYYY-MM-DD');
+            const m = this.plugin.settings.dayMetrics.find((x: any) => x.date === date);
+            result.push(m ? accessor(m) : 0);
+        }
+        return result;
+    }
+
     showUndoToast(questName: string) {
-        const toast = document.createElement("div");
-        toast.setAttribute("style", "position:fixed; bottom:20px; right:20px; background:#1e1e1e; padding:12px 20px; border-radius:6px; z-index:9999; border:1px solid var(--sisy-blue); box-shadow: 0 5px 20px rgba(0,0,0,0.5); display:flex; align-items:center; gap:15px;"); 
-        toast.innerHTML = `<span>Deleted: <strong>${questName}</strong></span>`;
-        
-        const btn = document.createElement("button");
-        btn.innerText = "UNDO";
-        btn.setAttribute("style", "cursor:pointer; color:var(--sisy-blue); background:none; border:none; font-weight:bold; letter-spacing:1px;");
-        btn.onclick = async () => { await this.plugin.engine.undoLastDeletion(); toast.remove(); };
-        
-        toast.appendChild(btn);
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 8000);
+        showToast({
+            icon: '🗑️',
+            title: `Deleted: ${questName}`,
+            variant: 'fail',
+            duration: 8000,
+            action: {
+                label: 'UNDO',
+                callback: () => this.plugin.engine.undoLastDeletion()
+            }
+        });
     }
 }

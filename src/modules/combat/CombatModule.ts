@@ -18,6 +18,8 @@ export class CombatModule extends GameModule {
             const engine = this.kernel!.getService('engine');
             const app = this.kernel!.getService('app');
             const plugin = this.kernel!.getService('plugin');
+            if (!app || !plugin) return;
+
             const result = engine?.analyticsEngine?.defeatBoss?.(payload.bossLevel);
 
             if (result?.message) {

@@ -105,6 +105,7 @@ export interface DayMetrics {
     damagesTaken: number;
     skillsLeveled: string[];
     chainsCompleted: number;
+    hourlyCompletions?: number[]; // 24-element array, index = hour (0-23)
 }
 
 export interface WeeklyReport {
@@ -183,14 +184,14 @@ export interface QuestChainRecord {
 export interface SisyphusSettings {
 
 
-  // [NEW] Templates
+    // [NEW] Templates
     questTemplates: QuestTemplate[];
 
-  // [NEW] Gamification
+    // [NEW] Gamification
     comboCount: number;
     lastCompletionTime: number; // Timestamp in milliseconds
 
-  // [NEW] Active Power-Ups
+    // [NEW] Active Power-Ups
     activeBuffs: ActiveBuff[];
 
 
@@ -204,14 +205,14 @@ export interface SisyphusSettings {
     xpReq: number;
     level: number;
     rivalDmg: number;
-    
+
     // Timestamps & locks
     lastLogin: string;
     shieldedUntil: string;
     restDayUntil: string;
     lockdownUntil: string;
     damageTakenToday: number;
-    
+
     // Skills & progression
     skills: Skill[];
     dailyModifier: Modifier;
@@ -219,25 +220,25 @@ export interface SisyphusSettings {
     history: DayLog[];
     runCount: number;
     muted: boolean;
-    
+
     // DLC 1: Daily Missions
     dailyMissions: DailyMission[];
     dailyMissionDate: string;
     questsCompletedToday: number;
     skillUsesToday: Record<string, number>;
-    
+
     // DLC 2: Research Quest System
     researchQuests: ResearchQuest[];
     researchStats: ResearchStats;
     lastResearchQuestId: number;
-    
+
     // DLC 3: Meditation & Recovery
     meditationCyclesCompleted: number;
     questDeletionsToday: number;
     lastDeletionReset: string;
     isMeditating: boolean;
     meditationClicksThisLockdown: number;
-    
+
     // DLC 4: Quest Chains
     activeChains: QuestChain[];
     chainHistory: QuestChainRecord[];
@@ -245,7 +246,7 @@ export interface SisyphusSettings {
     chainQuestsCompleted: number;
     questFilters: Record<string, ContextFilter>;
     filterState: FilterState;
-    
+
     // DLC 6: Analytics & Endgame
     dayMetrics: DayMetrics[];
     weeklyReports: WeeklyReport[];
@@ -260,6 +261,9 @@ export interface SisyphusSettings {
 
     /** Neural Hub canvas path (default: Active_Run/Neural_Hub.canvas) */
     neuralHubPath: string;
+
+    /** Rival AI state */
+    rival: RivalState;
 }
 
 export interface Scar {
@@ -267,4 +271,18 @@ export interface Scar {
     label: string;
     value: string | number;
     earnedAt: string;
+}
+
+export type RivalPersonality = 'aggressive' | 'mocking' | 'calculating' | 'silent';
+
+export interface RivalState {
+    name: string;
+    avatar: string;
+    personality: RivalPersonality;
+    level: number;
+    xp: number;
+    xpReq: number;
+    damageDealt: number;
+    lastTaunt: string;
+    lastTauntTime: string;
 }

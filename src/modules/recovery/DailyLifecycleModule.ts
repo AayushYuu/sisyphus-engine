@@ -17,6 +17,7 @@ export class DailyLifecycleModule extends GameModule {
             const app = this.kernel!.getService('app');
             const plugin = this.kernel!.getService('plugin');
             const engine = this.kernel!.getService('engine');
+            if (!app || !plugin) return;
 
             const today = moment().format('YYYY-MM-DD');
             if (settings.lastLogin) {
