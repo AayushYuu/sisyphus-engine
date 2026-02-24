@@ -1,242 +1,673 @@
-# 🏔️ Sisyphus Engine: The Manual
+# SISYPHUS ENGINE — WIKI
 
-**Welcome to the deep end.** This document outlines every mechanic, formula, and system within the Sisyphus Engine.
-
----
-
-## 📋 Table of Contents
-
-1. [The Panopticon (HUD)](#1-the-panopticon-hud)
-2. [Core Gameplay Loop](#2-core-gameplay-loop)
-3. [New Features (v2.5)](#3-new-features-v25)
-4. [DLC 1: Daily Missions & Scraps](#4-dlc-1-daily-missions--scraps)
-5. [DLC 2: Combat Librarian (Research)](#5-dlc-2-combat-librarian-research)
-6. [DLC 3: Meditation & Recovery](#6-dlc-3-meditation--recovery)
-7. [DLC 4: Quest Chains](#7-dlc-4-quest-chains)
-8. [DLC 5: Context Filters](#8-dlc-5-context-filters)
-9. [DLC 6: Analytics & Endgame](#9-dlc-6-analytics--endgame)
-10. [Boss System](#10-boss-system)
-11. [Achievement System](#11-achievement-system)
-12. [Folder Structure](#12-folder-structure)
-13. [Advanced Mechanics](#13-advanced-mechanics)
+Comprehensive documentation for every system in the Sisyphus Engine.
 
 ---
 
-## <a id="1-the-panopticon-hud"></a>1. The Panopticon (HUD)
+## Table of Contents
 
-The **Panopticon** is your persistent Heads-Up Display in the right sidebar.
-
-### **Vitals Grid**
-* **HP:** Health Points. 0 = Permadeath. Turns red when critical (<30 HP).
-* **Gold:** Currency. **Negative Gold (Debt) doubles all incoming damage**.
-* **Level:** Current progression level. Unlocks Boss fights at 10, 20, 30, 50.
-* **Rival Dmg:** Current punishment value. Scales with Level (+1 per failed quest).
-
-### **Status Sirens**
-* **🔒 LOCKDOWN ACTIVE:** Triggered when you take >50 damage in one session.
-* **⚠️ DEBT CRISIS:** Pulsing red alert when Gold < 0.
-* **🛡️ REST DAY ACTIVE:** Green alert showing immunity to damage.
-* **🧪 ACTIVE EFFECTS:** Tracks duration of potions/buffs (e.g., "Focus Potion: 45m left").
-
----
-
-## <a id="2-core-gameplay-loop"></a>2. Core Gameplay Loop
-
-### **Quest Difficulty Table**
-
-| Difficulty | Label | XP Reward | Gold Reward | Description |
-|:---|:---|:---|:---|:---|
-| **1** | Trivial | 5% of XP Req | 10g | Low risk, low reward |
-| **2** | Easy | 10% of XP Req | 20g | Light tasks |
-| **3** | Medium | 20% of XP Req | 40g | Standard difficulty |
-| **4** | Hard | 40% of XP Req | 80g | Challenging work |
-| **5** | SUICIDE | 60% of XP Req | 150g | Maximum risk |
-| **Boss** | ☠️ BOSS | 1000 XP | 1000g | Special milestone quests |
-
-### **Daily Modifiers (Chaos)**
-Every day at login, one modifier is rolled:
-
-| Modifier | Effect | Icon |
-| :--- | :--- | :--- |
-| **Clear Skies** | No effects. | ☀️ |
-| **Flow State** | +50% XP gain. | 🌊 |
-| **Windfall** | +50% Gold gain. | 💰 |
-| **Inflation** | Shop prices 2x. | 📈 |
-| **Brain Fog** | XP gain halved (0.5x). | 🌫️ |
-| **Rival Sabotage** | Gold gain halved (0.5x). | 🕵️ |
-| **Adrenaline** | 2x XP, but -5 HP per quest completed. | 💉 |
+1. [Architecture Overview](#architecture-overview)
+2. [Kernel & Module System](#kernel--module-system)
+3. [Quest System](#quest-system)
+4. [Skill Tree & Decay](#skill-tree--decay)
+5. [HP, Survival & Death](#hp-survival--death)
+6. [Gold Economy & Shop](#gold-economy--shop)
+7. [Rival AI](#rival-ai)
+8. [Achievement Engine](#achievement-engine)
+9. [Difficulty Auto-Calibration](#difficulty-auto-calibration)
+10. [Bounty Board](#bounty-board)
+11. [Recurring Quests](#recurring-quests)
+12. [Boss Rush Mode](#boss-rush-mode)
+13. [Notification Center](#notification-center)
+14. [Themes System](#themes-system)
+15. [Command Hub](#command-hub)
+16. [Analytics & Metrics](#analytics--metrics)
+17. [Quest Chains](#quest-chains)
+18. [Research Quests](#research-quests)
+19. [Meditation & Recovery](#meditation--recovery)
+20. [Pomodoro Timer](#pomodoro-timer)
+21. [Daily Lifecycle](#daily-lifecycle)
+22. [Settings & Configuration](#settings--configuration)
+23. [Data Management](#data-management)
+24. [File Structure](#file-structure)
 
 ---
 
-## <a id="3-new-features-v25"></a>3. New Features (v2.5)
+## Architecture Overview
 
-* **Hyper-Stable Rendering:** Double-buffered UI eliminates scroll jumping.
-* **Safe Archiving:** Auto-renames duplicate files in Archive to prevent errors.
-* **Live Word Count:** Research quests update word counts in real-time.
-* **Template Manager:** Native UI for creating and managing quest templates.
+Sisyphus Engine follows a **modular kernel architecture** inspired by OS design:
 
----
-
-## <a id="4-dlc-1-daily-missions--scraps"></a>4. DLC 1: Daily Missions & Scraps
-
-3 random objectives assigned daily. **Reward:** +50 Gold for completing all three.
-
-<details>
-<summary><strong>View Mission Pool</strong> (Click to Expand)</summary>
-
-| Mission | Description | Target | Reward |
-|:---|:---|:---|:---|
-| ☀️ Morning Win | Complete 1 Trivial quest before 10 AM | 1 | +15g |
-| 🔥 Momentum | Complete 3 quests today | 3 | +20 XP |
-| 🧘 Zero Inbox | Process all files in 'Scraps' folder | 1 | +10g |
-| 🎯 Specialist | Use the same skill 3 times | 3 | +15 XP |
-| 💪 High Stakes | Complete 1 High Stakes quest | 1 | +30g |
-| ⚡ Speed Demon | Complete quest within 2h of creation | 1 | +25 XP |
-| 🔗 Synergist | Complete quest with Primary + Secondary skill | 1 | +10g |
-| 🛡️ Survivor | Don't take any damage today | 1 | +20g |
-
-</details>
-
----
-
-## <a id="5-dlc-2-combat-librarian-research"></a>5. DLC 2: Combat Librarian (Research)
-
-**The Rule:** You must complete **2 Combat Quests** to earn the right to create **1 Research Quest**.
-
-* **Survey:** 200 words.
-* **Deep Dive:** 400 words.
-* **Live Tracking:** Writing in the file updates the progress bar in the HUD instantly.
-
----
-
-## <a id="6-dlc-3-meditation--recovery"></a>6. DLC 3: Meditation & Recovery
-
-### **Lockdown**
-Taking >50 Damage in one day triggers **Lockdown** (6 hours). You cannot deploy new quests.
-
-### **Meditation**
-* **Command:** `Meditation: Start`
-* **Mechanic:** Plays 432Hz tone. 30s cooldown.
-* **Effect:** 10 cycles reduces lockdown by 5 hours.
-
-### **Deletion Quota**
-* 3 Free deletions per day.
-* 4th deletion costs 10 Gold.
-
----
-
-## <a id="7-dlc-4-quest-chains"></a>7. DLC 4: Quest Chains
-
-Link quests together for **+100 XP Bonus**.
-* Quests must be done in order.
-* Next quest is "Locked" until previous is done.
-* Breaking a chain forfeits the bonus.
-
----
-
-## <a id="8-dlc-5-context-filters"></a>8. DLC 5: Context Filters
-
-Filter your view by:
-* **Energy:** High, Medium, Low.
-* **Context:** Home, Office, Anywhere.
-* **Tags:** Custom hashtags.
-
----
-
-## <a id="9-dlc-6-analytics--endgame"></a>9. DLC 6: Analytics & Endgame
-
-* **Heatmap:** 28-day visual contribution grid.
-* **Activity Line:** 7-day productivity trend.
-* **JSON Export:** Backup your entire run history via command palette.
-
----
-
-## <a id="10-boss-system"></a>10. Boss System
-
-Bosses spawn at specific levels. They have massive HP pools and punish failure severely.
-
-<details>
-<summary><strong>View Boss Data</strong> (Click to Expand)</summary>
-
-| Level | Name | HP | Penalty | Description |
-|:---|:---|:---|:---|:---|
-| 10 | The Gatekeeper | 300 | 20 HP | The first major filter. |
-| 20 | The Shadow Self | 500 | 30 HP | Your bad habits manifest. |
-| 30 | The Mountain | 700 | 40 HP | The peak is visible. |
-| 50 | Sisyphus Prime | 1100 | 99 HP | One must imagine Sisyphus happy. |
-
-</details>
-
----
-
-## <a id="11-achievement-system"></a>11. Achievement System
-
-* **First Blood:** Complete 1 quest.
-* **Week Warrior:** 7-day streak.
-* **Capitalist:** Hold 500 gold.
-* **Giant Slayer:** Defeat any Boss.
-* **Immortal:** Reach Level 20 with 0 deaths.
-
----
-
-## <a id="12-folder-structure"></a>12. Folder Structure
-
-Sisyphus auto-generates this structure.
 ```
-Vault/
-├── Active_Run/
-│   ├── Quests/               # Active combat quests
-│   ├── Research/             # Active research files (v2.0)
-│   ├── Archive/              # Completed quests
-│   └── Neural_Hub.canvas     # Skill graph visualization
-├── Scraps/                   # Quick capture inbox
-│   └── [timestamp].md        # Individual scraps
-├── Graveyard/
-│   ├── Failures/             # Failed quests
-│   │   └── [FAILED] quest.md
-│   └── Deaths/               # Death archives
-│       └── 2026-01-23-1430/  # Timestamp folders
-│           └── quest.md
-└── .obsidian/
-    └── plugins/
-        └── sisyphus-engine/
-            ├── main.js
-            ├── styles.css
-            └── manifest.json
-		    └── src/
-		         ├── achievements.ts
-				 ├── engines/
-				        ├── AnalyticsEngine.ts
-				        ├── ChainsEngine.ts
-				        ├── FiltersEngine.ts
-				        ├── MeditationEngine.ts
-				        └── ResearchEngine.ts
-				 ├── engine.ts
-				 ├── main.ts
-				 ├── settings.ts
-				 ├── types.ts
-				 ├── ui/
-				 │   ├── card.ts
-				 │   ├── charts.ts
-				 │   ├── modals.ts
-				 │   └── view.ts
-				 └── utils.ts
+┌───────────────────────────────────────────┐
+│              SisyphusPlugin               │
+│  (Obsidian Plugin entry point)            │
+├───────────────────────────────────────────┤
+│              SisyphusKernel               │
+│  ┌─────────┐ ┌────────────┐ ┌─────────┐  │
+│  │EventBus │ │StateManager│ │ModuleMgr│  │
+│  └─────────┘ └────────────┘ └─────────┘  │
+├───────────────────────────────────────────┤
+│             Game Modules (8)              │
+│  Survival | Progression | Economy | Combat│
+│  Productivity | Analytics | Recovery      │
+│  DailyLifecycle                           │
+├───────────────────────────────────────────┤
+│           Static Engines (7)              │
+│  Achievement | Rival | Difficulty         │
+│  Bounty | Recurring | BossRush            │
+│  Notification                             │
+├───────────────────────────────────────────┤
+│             UI Layer                      │
+│  PanopticonView | Modals | CommandHub     │
+│  SkillTree | Charts | QuestCards          │
+└───────────────────────────────────────────┘
 ```
 
-## <a id="13-advanced-mechanics"></a>13. Advanced Mechanics
+### Event Flow
+1. User action triggers a kernel event (e.g., `quest:completed`)
+2. All subscribed modules process the event
+3. Static engines perform calculations on shared state
+4. The Panopticon view refreshes to reflect changes
 
-### **The Debt Crisis**
-* **Trigger:** Gold < 0.
-* **Effect:** All incoming damage is **doubled**.
-* **Visual:** HUD pulses red.
+---
 
-### **Skill Rust**
-* **Trigger:** Skill unused for 3 days.
-* **Effect:** XP Requirement +10% per rust stack.
-* **Cure:** Use the skill or buy "Rest Day".
+## Kernel & Module System
 
-### **Neural Hub**
-Generates an Obsidian Canvas (`Active_Run/Neural_Hub.canvas`) visualizing your skills and their "Synergy" connections.
-* **Green:** Active
-* **Red:** Rusty
-* **Lines:** Connections formed by using Secondary Skills.
+### Kernel (`src/core/Kernel.ts`)
+The `SisyphusKernel` manages:
+- **EventBus** — Typed publish/subscribe for domain events
+- **StateManager** — Migration-safe state persistence with versioning
+- **ModuleManager** — Module registration, enabling, and lifecycle
+
+### Kernel Events
+| Event | Payload | Description |
+|---|---|---|
+| `clock:tick` | `{ now: string }` | Fired every 60 seconds |
+| `session:start` | `{ now: string }` | Fired on daily login |
+| `quest:completed` | `{ questId, difficulty, skillName, ... }` | Quest successfully completed |
+| `quest:failed` | `{ questId, damage, manualAbort, ... }` | Quest failed or deadline missed |
+| `reward:granted` | `{ xp, gold, reason }` | XP/Gold reward applied |
+
+### Modules
+Each module extends `GameModule` and implements:
+- `onEnable()` — Subscribe to kernel events
+- `onDisable()` — Unsubscribe from events
+- `renderSettings(container)` — Render per-module settings in the settings tab
+
+| Module | ID | Description |
+|---|---|---|
+| Survival | `survival` | HP damage from failures, lockdown, death checks |
+| Progression | `progression` | XP calculations, level-ups, boss milestone spawning |
+| Economy | `economy` | Gold rewards from quest completions |
+| Combat | `combat` | Boss defeat processing, victory conditions |
+| Productivity | `productivity` | Quest counters, streaks, daily mission progression |
+| Analytics | `analytics` | Daily metric tracking, telemetry |
+| Recovery | `recovery` | Buff expiration, timed recovery effects |
+| Daily Lifecycle | `daily_lifecycle` | Daily login reset, rot damage, chaos rolls, skill rust |
+
+### Game Modes
+| Mode | Active Modules |
+|---|---|
+| **Full** | All 8 modules |
+| **Pacifist** | Progression, Economy, Productivity, Analytics |
+| **Zen** | Progression, Productivity |
+| **Hardcore** | All 8 modules (with increased penalties) |
+| **Custom** | User-selected modules |
+
+---
+
+## Quest System
+
+Quests are markdown files stored in `Active_Run/Quests/`. Each quest has:
+
+### Quest Properties (Frontmatter)
+| Property | Type | Description |
+|---|---|---|
+| `diff` | 1-5 | Difficulty level |
+| `skill` | string | Primary skill tag |
+| `secondarySkill` | string | Secondary skill tag |
+| `deadline` | string | Absolute time ("10:00") or relative ("+2h") |
+| `energy` | string | Energy level (high/medium/low) |
+| `context` | string | Context (home/office/transit) |
+| `tags` | string[] | Custom tags for filtering |
+| `highStakes` | boolean | Doubled rewards and penalties |
+
+### Quest Lifecycle
+1. **Deploy** — Created via modal, quick capture, template, or bounty accept
+2. **Active** — Visible in Panopticon, countdown running
+3. **Complete** — Triggers `quest:completed` event, grants rewards
+4. **Failed** — Triggered by deadline expiry, deals HP damage
+5. **Deleted** — Moved to trash (undoable via `Ctrl+Shift+Z`)
+
+### Quest Filtering (Smart Filter Panel)
+The Panopticon includes a **collapsible smart filter panel** with 5 dimensions:
+
+| Dimension | Options | Behavior |
+|---|---|---|
+| **Energy** | ⚡ High, 🔋 Med, 🪫 Low | Pill toggles (tap to toggle on/off) |
+| **Context** | 🏠 Home, 💼 Office, 🌍 Any | Pill toggles |
+| **Difficulty** | ★ to ★★★★★ | Star buttons (reads `diff` from frontmatter) |
+| **Skill** | Dropdown of all skills | Filters by `skill` or `secondarySkill` frontmatter |
+| **Tags** | Clickable chip buttons | Requires ANY active tag to match |
+
+**Sort Modes** (dropdown):
+- ⏰ Urgent First — Sort by deadline (default)
+- 🟢 Easy First — Sort by ascending difficulty
+- 🔴 Hard First — Sort by descending difficulty
+- 🆕 Newest First — Sort by creation date
+
+**UI Behavior:**
+- Panel header shows filter count badge and match count (`X/Y`)
+- Panel auto-collapses when no filters are active
+- "✕ CLEAR ALL" button resets all 5 dimensions and sort mode
+- Manual order and boss quests always override sort mode
+
+---
+
+## Skill Tree & Decay
+
+### Skills
+Each skill tracks:
+| Field | Description |
+|---|---|
+| `name` | Skill name (e.g., "Coding", "Fitness") |
+| `level` | Current level (visual glow at 5+ and 10+) |
+| `xp` / `xpReq` | Progress to next level |
+| `rust` | Decay counter (0-10), increases when skill is neglected |
+| `lastUsed` | Timestamp of last use |
+| `connections` | Neural links to other skills |
+
+### Skill Decay Visualization
+Rust builds when a skill isn't used for 3+ days:
+| Rust Level | Visual Effect | Class |
+|---|---|---|
+| 1-3 | Yellow overlay, subtle border | `sisy-rust-mild` |
+| 4-6 | Orange overlay, pulsing border | `sisy-rust-medium` |
+| 7-10 | Red overlay, grayscale filter, fast pulse | `sisy-rust-severe` |
+
+Each skill node shows:
+- **Rust progress bar** — Visual gradient from gold to red
+- **Severity label** — "FADING", "DECAYING", or "CRITICAL"
+- **Idle day counter** — Days since last use
+
+### Skill Tree Rendering
+Skills are rendered as an SVG-based grid with:
+- **Connection lines** — Dashed SVG lines between linked skills
+- **Level badges** — Color-coded by level tier (Adept 5+, Master 10+)
+- **XP progress bars** — Real-time fill with exact XP counts
+
+---
+
+## HP, Survival & Death
+
+### HP System
+- **Base HP**: 100 + (Level × 5)
+- **Recovery**: +20 HP per daily login
+- **Damage Sources**: Failed quests, rot (inactivity), rival attacks
+- **Shield**: Temporary damage immunity (purchasable in shop)
+
+### Death & Rebirth
+When HP drops to zero:
+1. A **Death Modal** appears
+2. **Scars** are recorded (death count, best streak, boss kills, achievements)
+3. Run resets: HP, gold, quests, skills, and level return to defaults
+4. Scars persist forever as a permanent record
+
+### Vignette Effect
+When HP is ≤ 20, a red vignette overlay pulses around the screen edge as a warning.
+
+---
+
+## Gold Economy & Shop
+
+### Earning Gold
+- Quest completion: Base reward scaled by difficulty
+- Chaos modifier: Daily random multiplier (0.5x to 3x)
+- Active buffs: Gold multiplier potions
+- Boss Rush: Completion bonus
+
+### Shop Items
+| Item | Cost | Effect |
+|---|---|---|
+| HP Potion | Varies | Restores HP |
+| XP Scroll | Varies | Grants bonus XP |
+| Gold Relic | Varies | Permanent gold multiplier |
+| Shield | Varies | Temporary damage immunity |
+
+### Debt
+Gold can go negative. While in debt, survival damage is doubled.
+
+---
+
+## Rival AI
+
+### Rival Properties
+| Field | Description |
+|---|---|
+| `name` | Rival's name |
+| `personality` | aggressive, mocking, strategic, or chaotic |
+| `level` / `xp` | Rival levels up when you fail |
+| `damageDealt` | Total damage dealt to you |
+
+### Rival Behavior
+- **On quest complete**: Rival reacts with a personality-based taunt
+- **On quest fail**: Rival gains 15 XP and taunts
+- **Leveling**: Rival levels up independently, increasing its threat
+
+### Rival Taunts
+Personality-specific taunt pools that display as notifications.
+
+---
+
+## Achievement Engine
+
+### Achievement Check
+`AchievementEngine.checkAll(settings)` runs after every quest completion, checking conditions like:
+- Total quests completed
+- Streak milestones
+- Boss defeats
+- Gold accumulated
+- Level thresholds
+
+### Achievement Categories
+- **Combat** — Quest completion milestones
+- **Productivity** — Streak and consistency achievements
+- **Exploration** — Skill diversity and research achievements
+
+---
+
+## Difficulty Auto-Calibration
+
+### How It Works
+The `DifficultyCalibrator` engine tracks completion rates per difficulty tier (1-5):
+
+```
+Tier 1: ████████░░ 80% (24/30)
+Tier 2: ██████░░░░ 60% (12/20)
+Tier 3: ████░░░░░░ 40% (8/20)
+Tier 4: ██░░░░░░░░ 20% (2/10)
+Tier 5: ░░░░░░░░░░  0% (0/0)
+```
+
+### Suggestion Algorithm
+After 5+ attempts at your most-used tier:
+- **>90% success rate** → Suggests increasing difficulty ("You're crushing it!")
+- **<40% success rate** → Suggests decreasing difficulty ("Try lowering difficulty")
+- **40-90%** → No suggestion (you're in the sweet spot)
+
+### Data Stored
+| Field | Type | Description |
+|---|---|---|
+| `completions` | number[5] | Completions per tier |
+| `failures` | number[5] | Failures per tier |
+| `avgCompletionTime` | number[5] | Average completion time per tier |
+| `suggestedAdjustment` | -1, 0, 1 | Current suggestion |
+
+---
+
+## Bounty Board
+
+### Overview
+The **Bounty Board** auto-generates quests based on player behavior patterns, specifically targeting neglected skills.
+
+### Bounty Generation
+`BountyEngine.generateBounties(settings)` analyzes:
+1. Skills with high rust levels
+2. Skills not used recently
+3. Overall skill distribution imbalances
+
+### Bounty Structure
+| Field | Description |
+|---|---|
+| `name` | Quest name (e.g., "Quick Exercise Session") |
+| `description` | What to do |
+| `reason` | Why this bounty was generated |
+| `targetSkill` | The neglected skill this targets |
+| `reward.xp` | XP reward (higher than normal) |
+| `reward.gold` | Gold reward |
+| `reward.multiplier` | Reward multiplier (1.5x - 3x) |
+| `difficulty` | Auto-set difficulty |
+| `expiresAt` | Expiration timestamp |
+
+### Accept/Dismiss
+- **Accept** — Creates the quest, removes the bounty
+- **Dismiss** — Removes the bounty until next generation
+
+---
+
+## Recurring Quests
+
+### Overview
+**Recurring Quests** auto-deploy on a schedule. Perfect for daily routines, weekly reviews, or monthly goals.
+
+### Recurring Quest Properties
+| Field | Description |
+|---|---|
+| `name` | Quest name |
+| `frequency` | `daily`, `weekly`, or `monthly` |
+| `difficulty` | 1-5 |
+| `skill` | Skill tag |
+| `lastDeployed` | Last deployment date |
+| `enabled` | Active/inactive toggle |
+| `deployTime` | Time of day to deploy (e.g., "08:00") |
+
+### Deployment
+`RecurringEngine.checkAndDeploy(settings)` runs on session start:
+1. Checks each enabled recurring quest
+2. If due (based on frequency and lastDeployed), marks it for deployment
+3. Returns the list of quests to deploy
+
+---
+
+## Boss Rush Mode
+
+### Overview
+**Boss Rush** is a gauntlet mode where you queue 2-5 quests and attempt to complete them all in sequence. Massive bonus rewards on completion, but quest failure ends the rush.
+
+### States
+| State | Description |
+|---|---|
+| **Inactive** | No rush active |
+| **Active** | Rush in progress, tracking current quest index |
+| **Completed** | All quests done — 2x total XP/Gold bonus |
+| **Failed** | A quest failed — no bonus, rush ends |
+
+### Mechanics
+- **Start**: Via Command Hub or `Boss Rush: Start` command. Queues top 5 active quests.
+- **Progress**: Each quest completion advances the index. The Panopticon shows the full queue with status indicators (✅ done, ⚔️ current, ⬜ pending).
+- **Completion Bonus**: Total XP × 2 and Total Gold × 2 on full completion.
+- **Failure**: Immediate rush end, no bonus rewards.
+- **Abort**: Manual abort available via "ABORT RUSH" button.
+
+---
+
+## Notification Center
+
+### Overview
+A persistent event feed in the Panopticon that captures all significant events.
+
+### Notification Categories
+| Category | Events |
+|---|---|
+| `achievement` | Achievement unlocked |
+| `rival` | Rival taunts, rival level-ups |
+| `combat` | Quest complete, quest failed, boss rush events |
+| `progression` | Level-ups, skill connections |
+| `system` | Daily reset, chaos modifier changes |
+| `bounty` | Bounty generation, acceptance |
+
+### Storage
+- Max 50 notifications stored
+- Newest first ordering
+- Read/unread tracking
+- Badge in Panopticon header shows unread count
+
+### Actions
+- **Mark All Read** — Clears unread indicators
+- **Clear** — Removes all notifications
+
+---
+
+## Themes System
+
+### Available Themes
+| Theme | Description | Variable Override Summary |
+|---|---|---|
+| **Default** | Purple/Blue with glass backgrounds | Base `--sisy-*` variables |
+| **Cyberpunk** | Neon magenta/cyan with glowing text | Neon colors, text shadows |
+| **Dark Souls** | Muted earth tones, gritty feel | Brown/gold palette, square edges |
+| **Minimal** | Monochrome grays, no shadows | All grays, minimal decoration |
+| **Terminal** | Green-on-black, monospace font | All green, Courier font, CRT glow |
+
+### How Themes Work
+1. Theme selection in Settings → Appearance → Theme dropdown
+2. Stored as `settings.theme` string
+3. Applied as CSS class `sisy-theme-{name}` on the Panopticon container
+4. Themes override CSS custom properties (`--sisy-purple`, `--sisy-red`, etc.)
+5. No runtime overhead — pure CSS variable cascade
+
+### Creating Custom Themes
+Add a new CSS class following the pattern:
+```css
+.sisy-theme-mytheme {
+    --sisy-purple: #your-accent;
+    --sisy-red: #your-danger;
+    --sisy-green: #your-success;
+    --sisy-blue: #your-info;
+    --sisy-gold: #your-highlight;
+    --sisy-bg-dim: rgba(r, g, b, 0.03);
+    --sisy-bg-glass: rgba(r, g, b, 0.6);
+}
+```
+
+---
+
+## Command Hub
+
+### Overview
+A categorized feature grid (modal) providing instant access to all Sisyphus commands. Opened via:
+- ⚡ button in the Panopticon header
+- `Sisyphus: Command Hub` command
+
+### Categories
+| Category | Commands |
+|---|---|
+| **Combat** | Deploy Quest, Quick Capture, Complete Top, Accept Death, Boss Rush |
+| **Analytics** | Game Stats, Export Stats, Weekly Review, Character Profile |
+| **Skills** | Neural Hub Graph, View Scars |
+| **Research** | Create Research, View Library |
+| **Chains** | Create Chain, View Active |
+| **Tools** | Focus Audio, Meditation, Pomodoro, Reroll Chaos, Templates, Undo Delete, Recurring Quests |
+
+---
+
+## Analytics & Metrics
+
+The **Analytics Dashboard** is a 3-tab interface in the Panopticon:
+
+### Tab 1: 📊 Overview
+| Component | Description |
+|---|---|
+| **Summary Cards** | 2×2 grid: Today's Quests, Current Streak, Success Rate %, Best Day |
+| **Week Comparison** | 4-column grid comparing this week vs last week (quests, XP, gold, damage) with ↑/↓ delta arrows |
+| **Skill Radar** | SVG radar chart of top skills by level (requires 3+ skills) |
+
+### Tab 2: 📈 Activity
+| Component | Description |
+|---|---|
+| **GitHub Heatmap** | 365-day grid-style contribution heatmap (SVG, 4 intensity levels) |
+| **Productivity by Hour** | 24-bar chart showing quest completions per hour of day |
+| **7-Day Line Chart** | SVG line chart with gradient fill showing recent daily quest counts |
+
+### Tab 3: 💡 Insights
+| Component | Description |
+|---|---|
+| **Success Ring** | SVG donut chart showing overall success percentage (color-coded green/yellow/red) |
+| **Difficulty Breakdown** | 5 horizontal bars showing success rate per difficulty tier (★ to ★★★★★) with color-coded fills |
+| **Calibration Banner** | Suggestion from DifficultyCalibrator (📈 increase / 📉 decrease) |
+| **Top Skills** | Ranked list of top 5 skills by level, with name, level badge, and XP progress bar |
+
+### Day Metrics (`dayMetrics[]`)
+Tracked daily:
+- Quests completed/failed
+- XP/Gold earned
+- Damage taken
+- Skills leveled
+- Chains completed
+- Hourly completions (24-element array)
+
+### Weekly Reports
+Generated via `Weekly Review` command:
+- Total quests, success rate
+- Top skills, best day
+- Week-over-week comparison deltas
+
+### Sparklines
+Stats display inline 7-day sparkline charts with week-over-week delta indicators (↑ green / ↓ red).
+
+---
+
+## Quest Chains
+
+### Structure
+A chain is a sequence of quests that must be completed in order:
+- **Name** — Chain title
+- **Quests** — Ordered list of quest IDs
+- **Progress** — Current step and completion percentage
+
+### Chain Operations
+- **Create** — Via Chain Builder modal
+- **Break** — Manually abort the active chain
+- **Complete** — Auto-advances when the current quest is completed
+
+---
+
+## Research Quests
+
+### Overview
+Long-form quests tracked by word count rather than completion.
+
+### Properties
+| Field | Description |
+|---|---|
+| `title` | Research topic |
+| `wordCount` | Current word count |
+| `wordLimit` | Target word count |
+| `completed` | Completion status |
+
+### Research Ratio
+Tracks the balance between combat (regular) quests and research quests.
+
+---
+
+## Meditation & Recovery
+
+### Meditation
+- Triggered manually or on lockdown
+- Multi-click breathing exercise
+- Restores HP on completion
+
+### Lockdown
+Activated when `damageTakenToday > 50`:
+- Prevents new quest deployment
+- Forces meditation or rest
+- Resets on daily login
+
+### Rest Days
+Mark a day as a rest day to prevent:
+- Skill rust accumulation
+- Rival damage
+
+---
+
+## Pomodoro Timer
+
+Built-in focus timer:
+- **Start/Pause** — Toggle via command or button
+- **Reset** — Clear the current timer
+- **Audio notification** — Sound alert on completion
+
+---
+
+## Daily Lifecycle
+
+### Daily Login Reset
+On first login each day:
+1. HP regenerates (+20, capped at max)
+2. Damage counter resets
+3. Lockdown clears
+4. Skill rust accumulates (3+ days idle → +1 rust)
+5. Daily missions roll
+6. Chaos modifier rerolls
+
+### Rot Damage
+If you miss 2+ days:
+- Rot damage: (days away - 1) × 10 HP
+- Can lead to death if HP drops to zero
+
+---
+
+## Settings & Configuration
+
+### Global Settings
+| Setting | Description | Default |
+|---|---|---|
+| Starting HP | Base HP for new runs | 100 |
+| Rival Damage | Base damage for failed quests | 10 |
+| Mute Audio | Disable all sounds | false |
+| Theme | Visual theme | default |
+
+### Per-Module Settings
+Each enabled module displays its own settings section below the module toggles, showing:
+- Current module state (HP, Gold, Level, etc.)
+- Module-specific statistics
+- Read-only diagnostic information
+
+---
+
+## Data Management
+
+### Export
+Downloads a full JSON backup of config and game state.
+
+### Import
+Restores from a backup file. **Warning**: Overwrites all current data.
+
+### State Migration
+The `StateManager` handles version migrations automatically, ensuring backward compatibility when the plugin updates.
+
+---
+
+## File Structure
+
+```
+sisyphus-engine/
+├── src/
+│   ├── main.ts                    # Plugin entry point, commands, event hooks
+│   ├── engine.ts                  # SisyphusEngine (quest CRUD, combat, shop)
+│   ├── settings.ts                # Settings tab (modules, theme, audio, data)
+│   ├── types.ts                   # All type definitions
+│   ├── utils.ts                   # AudioController, helpers
+│   ├── core/
+│   │   ├── Kernel.ts              # SisyphusKernel (event bus, state, services)
+│   │   ├── EventBus.ts            # Typed pub/sub event system
+│   │   ├── GameModule.ts          # Base module class
+│   │   ├── ModuleManager.ts       # Module lifecycle management
+│   │   ├── StateManager.ts        # State persistence and migration
+│   │   └── services.ts            # Service type definitions
+│   ├── engines/
+│   │   ├── AchievementEngine.ts   # Achievement checking and unlocking
+│   │   ├── RivalEngine.ts         # Rival AI behavior and taunts
+│   │   ├── DifficultyCalibrator.ts# Quest difficulty analysis
+│   │   ├── BountyEngine.ts        # Auto-generated bounty quests
+│   │   ├── RecurringEngine.ts     # Scheduled quest deployment
+│   │   ├── BossRushEngine.ts      # Boss Rush mode state machine
+│   │   ├── NotificationEngine.ts  # Event feed management
+│   │   └── PomodoroTimer.ts       # Focus timer
+│   ├── modules/
+│   │   ├── survival/SurvivalModule.ts
+│   │   ├── progression/ProgressionModule.ts
+│   │   ├── economy/EconomyModule.ts
+│   │   ├── combat/CombatModule.ts
+│   │   ├── productivity/ProductivityModule.ts
+│   │   ├── analytics/AnalyticsModule.ts
+│   │   ├── recovery/RecoveryModule.ts
+│   │   └── recovery/DailyLifecycleModule.ts
+│   └── ui/
+│       ├── view.ts                # PanopticonView (main sidebar)
+│       ├── commandhub.ts          # Command Hub modal
+│       ├── modals.ts              # Quest, Shop, Skill, Scars modals
+│       ├── profile.ts             # Character Profile modal
+│       ├── review.ts              # Weekly Review, Boss Encounter modals
+│       ├── card.ts                # Quest card renderer
+│       ├── charts.ts              # Sparkline & chart renderers
+│       ├── effects.ts             # Toasts, float rewards, empty states
+│       └── skilltree.ts           # SVG skill tree renderer
+├── styles.css                     # All CSS (~2200 lines)
+├── manifest.json                  # Plugin manifest
+├── package.json                   # Dependencies
+├── rollup.config.mjs              # Build configuration
+├── tsconfig.json                  # TypeScript config
+├── README.md                      # Quick start guide
+└── WIKI.md                        # This file
+```

@@ -30,4 +30,14 @@ export class EconomyModule extends GameModule {
             this.unsubscribeRewardGranted = null;
         }
     }
+
+    renderSettings(container: HTMLElement): void {
+        if (!this.kernel) return;
+        const settings = this.kernel.state;
+
+        const section = container.createDiv({ cls: 'sisy-module-settings' });
+        section.createEl('h4', { text: '💰 Economy Settings' });
+        section.createEl('p', { text: settings.gold < 0 ? `⚠️ In debt: ${settings.gold} Gold` : `Balance: ${settings.gold} Gold`, attr: { style: 'font-size:0.85em; color:var(--text-muted);' } });
+        section.createEl('p', { text: `Gold Multiplier: ${settings.dailyModifier?.goldMult || 1}×`, attr: { style: 'font-size:0.85em; color:var(--text-muted);' } });
+    }
 }

@@ -138,6 +138,29 @@ export class SisyphusSettingTab extends PluginSettingTab {
                 })
             );
 
+        // --- APPEARANCE SECTION ---
+        containerEl.createEl('h3', { text: 'Appearance' });
+
+        new Setting(containerEl)
+            .setName('Theme')
+            .setDesc('Visual theme for the Panopticon sidebar')
+            .addDropdown((dd) => {
+                const themes: Record<string, string> = {
+                    'default': 'Default (Purple)',
+                    'cyberpunk': 'Cyberpunk (Neon)',
+                    'dark-souls': 'Dark Souls (Gritty)',
+                    'minimal': 'Minimal (Monochrome)',
+                    'terminal': 'Terminal (Green)',
+                };
+                Object.entries(themes).forEach(([k, v]) => dd.addOption(k, v));
+                dd.setValue(this.plugin.settings.theme || 'default');
+                dd.onChange(async (value) => {
+                    this.plugin.settings.theme = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.engine.trigger('update');
+                });
+            });
+
         // --- AUDIO SECTION ---
         containerEl.createEl('h3', { text: 'Audio' });
 

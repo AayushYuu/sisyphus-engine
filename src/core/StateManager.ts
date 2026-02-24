@@ -1,4 +1,4 @@
-import { SisyphusSettings } from '../types';
+import { SisyphusSettings, ThemeId } from '../types';
 
 export const CONFIG_VERSION = 1;
 export const STATE_VERSION = 1;
@@ -58,6 +58,7 @@ export interface GlobalConfig {
     gameMode: GameMode;
     difficultyScale: number;
     muteAudio: boolean;
+    theme: ThemeId;
 }
 
 export interface PersistedState {
@@ -77,7 +78,8 @@ const DEFAULT_CONFIG: GlobalConfig = {
     enabledModules: [...KNOWN_MODULE_IDS],
     gameMode: 'full',
     difficultyScale: 1,
-    muteAudio: false
+    muteAudio: false,
+    theme: 'default',
 };
 
 function isPersistedState(value: unknown): value is Partial<PersistedState> {

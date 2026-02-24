@@ -33,4 +33,15 @@ export class ProductivityModule extends GameModule {
             this.unsubscribeQuestCompleted = null;
         }
     }
+
+    renderSettings(container: HTMLElement): void {
+        if (!this.kernel) return;
+        const settings = this.kernel.state;
+
+        const section = container.createDiv({ cls: 'sisy-module-settings' });
+        section.createEl('h4', { text: '⚡ Productivity Settings' });
+        section.createEl('p', { text: `Quests Completed Today: ${settings.questsCompletedToday}`, attr: { style: 'font-size:0.85em; color:var(--text-muted);' } });
+        section.createEl('p', { text: `Streak: ${settings.streak?.current || 0} days (best: ${settings.streak?.longest || 0})`, attr: { style: 'font-size:0.85em; color:var(--text-muted);' } });
+        section.createEl('p', { text: `Daily Missions: ${(settings.dailyMissions || []).filter((m: any) => m.completed).length}/${(settings.dailyMissions || []).length}`, attr: { style: 'font-size:0.85em; color:var(--text-muted);' } });
+    }
 }

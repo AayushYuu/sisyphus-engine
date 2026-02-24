@@ -155,10 +155,15 @@ export interface ContextFilter {
     tags: string[];
 }
 
+export type SortMode = "deadline" | "easyFirst" | "hardFirst" | "newest";
+
 export interface FilterState {
     activeEnergy: EnergyLevel | "any";
     activeContext: QuestContext | "any";
     activeTags: string[];
+    activeDifficulty: number | "any";   // 1-5 or "any"
+    activeSkill: string | "any";        // skill name or "any"
+    sortMode: SortMode;
 }
 
 // DLC 4: Quest Chains
@@ -264,6 +269,24 @@ export interface SisyphusSettings {
 
     /** Rival AI state */
     rival: RivalState;
+
+    /** Notification Center */
+    notifications: GameNotification[];
+
+    /** Bounty Board */
+    bounties: Bounty[];
+
+    /** Recurring Quests */
+    recurringQuests: RecurringQuest[];
+
+    /** Boss Rush Mode */
+    bossRush: BossRushState;
+
+    /** Difficulty Calibration */
+    difficultyStats: DifficultyStats;
+
+    /** Visual theme (default | cyberpunk | dark-souls | minimal | terminal) */
+    theme: string;
 }
 
 export interface Scar {
@@ -286,3 +309,62 @@ export interface RivalState {
     lastTaunt: string;
     lastTauntTime: string;
 }
+
+// ─── Notification Center ───
+export interface GameNotification {
+    id: string;
+    icon: string;
+    title: string;
+    message: string;
+    timestamp: string;
+    category: 'achievement' | 'rival' | 'combat' | 'progression' | 'system' | 'bounty';
+    read: boolean;
+}
+
+// ─── Bounty Board ───
+export interface Bounty {
+    id: string;
+    name: string;
+    description: string;
+    reason: string;
+    targetSkill: string;
+    difficulty: number;
+    reward: { xp: number; gold: number; multiplier: number };
+    expiresAt: string;
+    accepted: boolean;
+    questFileCreated: boolean;
+}
+
+// ─── Recurring Quests ───
+export interface RecurringQuest {
+    id: string;
+    name: string;
+    difficulty: number;
+    skill: string;
+    schedule: 'daily' | 'weekday' | 'weekly' | 'custom';
+    customDays?: number[];
+    time?: string;
+    enabled: boolean;
+    lastDeployed?: string;
+}
+
+// ─── Boss Rush ───
+export interface BossRushState {
+    active: boolean;
+    queue: string[];
+    currentIndex: number;
+    startedAt?: string;
+    completedCount: number;
+    totalReward: { xp: number; gold: number };
+}
+
+// ─── Difficulty Calibration ───
+export interface DifficultyStats {
+    completions: number[];
+    failures: number[];
+    avgCompletionTime: number[];
+    suggestedAdjustment: number;
+}
+
+// ─── Themes ───
+export type ThemeId = 'default' | 'cyberpunk' | 'dark_souls' | 'minimal' | 'terminal';

@@ -1,13 +1,18 @@
 import { ItemView, WorkspaceLeaf, TFile, TFolder, moment, debounce } from 'obsidian';
 import SisyphusPlugin from '../main';
 import { QuestModal, ShopModal, SkillDetailModal, SkillManagerModal, ScarsModal } from './modals';
-import { Skill, DailyMission } from '../types';
+import { Skill, DailyMission, Bounty } from '../types';
 import { ChartRenderer } from './charts';
 import { QuestCardRenderer } from './card';
 import { renderEmptyState, showToast } from './effects';
 import { SkillTreeRenderer } from './skilltree';
 import { RivalEngine } from '../engines/RivalEngine';
 import { ProfileModal } from './profile';
+import { CommandHubModal } from './commandhub';
+import { NotificationEngine } from '../engines/NotificationEngine';
+import { BountyEngine } from '../engines/BountyEngine';
+import { BossRushEngine } from '../engines/BossRushEngine';
+import { DifficultyCalibrator } from '../engines/DifficultyCalibrator';
 
 export const VIEW_TYPE_PANOPTICON = "sisyphus-panopticon";
 
@@ -16,6 +21,7 @@ export class PanopticonView extends ItemView {
     draggedFile: TFile | null = null;
     selectMode: boolean = false;
     selectedQuests: Set<TFile> = new Set();
+    analyticsTab: string = 'overview';
 
     private observer: IntersectionObserver | null = null;
     private currentQuestList: TFile[] = [];
@@ -36,7 +42,7 @@ export class PanopticonView extends ItemView {
     }
 
     getViewType() { return VIEW_TYPE_PANOPTICON; }
-    getDisplayText() { return "Eye Sisyphus"; }
+    getDisplayText() { return "Sisyphus"; }
     getIcon() { return "skull"; }
 
     async onOpen() {
@@ -75,13 +81,33 @@ export class PanopticonView extends ItemView {
         // 3. Build Buffer
         const buffer = document.createDocumentFragment();
         const container = buffer.createDiv({ cls: "sisy-container" });
+        // Apply theme class
+        const theme = this.plugin.settings.theme || 'default';
+        if (theme !== 'default') container.addClass(`sisy-theme-${theme}`);
+
         const scroll = container.createDiv({ cls: "sisy-scroll-area" });
         scroll.style.scrollBehavior = "auto";
 
         // --- UI CONSTRUCTION ---
         const header = scroll.createDiv({ cls: "sisy-header" });
-        header.createEl("h2", { text: "Eye SISYPHUS OS" });
-        const soundBtn = header.createEl("span", { text: this.plugin.settings.muted ? "🔇" : "🔊", cls: "sisy-sound-btn" });
+        header.createEl("h2", { text: "SISYPHUS" });
+
+        const headerActions = header.createDiv({ cls: "sisy-header-actions" });
+
+        // Command Hub button
+        const hubBtn = headerActions.createEl("span", { text: "⚡", cls: "sisy-hub-btn" });
+        hubBtn.setAttribute('title', 'Command Hub');
+        hubBtn.onclick = () => new CommandHubModal(this.app, this.plugin).open();
+
+        // Notification badge
+        const unreadCount = NotificationEngine.getUnreadCount(this.plugin.settings);
+        const notifBtn = headerActions.createEl("span", { text: "🔔", cls: "sisy-notif-btn" });
+        if (unreadCount > 0) {
+            const badge = notifBtn.createSpan({ text: String(unreadCount), cls: 'sisy-notif-badge' });
+        }
+        notifBtn.onclick = () => { this.scrollToSection('notifications'); };
+
+        const soundBtn = headerActions.createEl("span", { text: this.plugin.settings.muted ? "🔇" : "🔊", cls: "sisy-sound-btn" });
         soundBtn.onclick = async () => {
             this.plugin.settings.muted = !this.plugin.settings.muted;
             this.plugin.audio.setMuted(this.plugin.settings.muted);
@@ -163,28 +189,7 @@ export class PanopticonView extends ItemView {
         if (this.isModEnabled('analytics')) {
             scroll.createDiv({ text: "ANALYTICS", cls: "sisy-section-title" });
             const analyticsContainer = scroll.createDiv({ cls: "sisy-analytics" });
-            this.setupAnalyticsStructure(analyticsContainer);
-            this.renderAnalyticsCharts(analyticsContainer, currentWidth);
-
-            // GitHub Heatmap
-            analyticsContainer.createEl('h4', { text: 'Contribution Heatmap (365 Days)' });
-            const heatContainer = analyticsContainer.createDiv({ cls: 'sisy-chart-container-heat' });
-            ChartRenderer.renderGitHubHeatmap(heatContainer, this.plugin.settings.dayMetrics);
-
-            // Time-of-day chart
-            analyticsContainer.createEl('h4', { text: 'Productivity by Hour' });
-            const todContainer = analyticsContainer.createDiv();
-            ChartRenderer.renderTimeOfDay(todContainer, this.plugin.settings.dayMetrics);
-
-            // Week-over-week comparison
-            analyticsContainer.createEl('h4', { text: 'This Week vs Last Week' });
-            const compGrid = analyticsContainer.createDiv({ cls: 'sisy-week-compare' });
-            weekComp.forEach(c => {
-                const item = compGrid.createDiv({ cls: 'sisy-week-compare-item' });
-                item.createDiv({ text: c.label, cls: 'sisy-week-compare-label' });
-                item.createDiv({ text: String(c.thisWeek), cls: 'sisy-week-compare-val' });
-                const delta = item.createDiv({ text: c.delta, cls: `sisy-stat-delta ${c.up ? 'sisy-stat-delta-up' : 'sisy-stat-delta-down'}` });
-            });
+            this.renderAnalyticsDashboard(analyticsContainer, weekComp, currentWidth);
         }
 
         // Trophy shelf
@@ -211,6 +216,19 @@ export class PanopticonView extends ItemView {
             RivalEngine.renderRivalHUD(scroll, this.plugin.settings);
         }
 
+        // Boss Rush
+        if (BossRushEngine.isActive(this.plugin.settings)) {
+            scroll.createDiv({ text: 'BOSS RUSH', cls: 'sisy-section-title' });
+            this.renderBossRush(scroll);
+        }
+
+        // Bounty Board
+        const activeBounties = BountyEngine.getActiveBounties(this.plugin.settings);
+        if (activeBounties.length > 0) {
+            scroll.createDiv({ text: `BOUNTY BOARD (${activeBounties.length})`, cls: 'sisy-section-title' });
+            this.renderBountyBoard(scroll, activeBounties);
+        }
+
         scroll.createDiv({ text: "ACTIVE THREATS", cls: "sisy-section-title" });
         const questContainer = scroll.createDiv({ cls: "sisy-quest-container" });
         this.renderQuestBatch(questContainer, itemsToRestore);
@@ -223,13 +241,15 @@ export class PanopticonView extends ItemView {
             });
             scroll.createDiv({ text: "+ Add Node", cls: "sisy-btn", attr: { style: "width:100%; margin-top:10px;" } }).onclick = () => new SkillManagerModal(this.app, this.plugin).open();
 
-            // Skill Radar Chart
-            if (this.plugin.settings.skills.length >= 3) {
-                scroll.createDiv({ text: 'SKILL PROFILE', cls: 'sisy-section-title' });
-                const radarWrap = scroll.createDiv({ cls: 'sisy-profile-radar' });
-                const sorted = [...this.plugin.settings.skills].sort((a, b) => b.level - a.level);
-                ChartRenderer.renderRadar(radarWrap, sorted);
+            // Notification Center
+            const notifications = NotificationEngine.getRecent(this.plugin.settings, 15);
+            if (notifications.length > 0) {
+                const unread = NotificationEngine.getUnreadCount(this.plugin.settings);
+                scroll.createDiv({ text: `NOTIFICATIONS${unread > 0 ? ` (${unread} new)` : ''}`, cls: 'sisy-section-title', attr: { id: 'sisy-notifications-anchor' } });
+                this.renderNotifications(scroll, notifications);
             }
+
+            // Skill Radar moved to Analytics Overview tab
         }
 
         const footer = container.createDiv({ cls: "sisy-quick-capture" });
@@ -271,17 +291,50 @@ export class PanopticonView extends ItemView {
 
         if (folder instanceof TFolder) {
             let files = folder.children.filter(f => f instanceof TFile) as TFile[];
-            files = this.plugin.engine.filtersEngine.filterQuests(files).filter((f): f is TFile => f instanceof TFile);
+
+            // Filter with frontmatter awareness
+            const fe = this.plugin.engine.filtersEngine;
+            files = files.filter(f => {
+                const fm = this.app.metadataCache.getFileCache(f)?.frontmatter;
+                return fe.questMatchesFilter(f.basename, fm);
+            });
+
+            // Sort based on active sort mode
+            const sortMode = this.plugin.settings.filterState.sortMode || 'deadline';
             files.sort((a, b) => {
                 const fmA = this.app.metadataCache.getFileCache(a)?.frontmatter;
                 const fmB = this.app.metadataCache.getFileCache(b)?.frontmatter;
+
+                // Manual order always wins
                 const orderA = fmA?.manual_order !== undefined ? fmA.manual_order : 9999999999999;
                 const orderB = fmB?.manual_order !== undefined ? fmB.manual_order : 9999999999999;
                 if (orderA !== orderB) return orderA - orderB;
+
+                // Boss quests always float up
                 if (fmA?.is_boss !== fmB?.is_boss) return (fmB?.is_boss ? 1 : 0) - (fmA?.is_boss ? 1 : 0);
-                const dateA = fmA?.deadline ? moment(fmA.deadline).valueOf() : 9999999999999;
-                const dateB = fmB?.deadline ? moment(fmB.deadline).valueOf() : 9999999999999;
-                return dateA - dateB;
+
+                // Apply sort mode
+                switch (sortMode) {
+                    case 'easyFirst': {
+                        const dA = fmA?.diff ?? 3;
+                        const dB = fmB?.diff ?? 3;
+                        return dA - dB;
+                    }
+                    case 'hardFirst': {
+                        const dA = fmA?.diff ?? 3;
+                        const dB = fmB?.diff ?? 3;
+                        return dB - dA;
+                    }
+                    case 'newest': {
+                        return b.stat.ctime - a.stat.ctime;
+                    }
+                    case 'deadline':
+                    default: {
+                        const dateA = fmA?.deadline ? moment(fmA.deadline).valueOf() : 9999999999999;
+                        const dateB = fmB?.deadline ? moment(fmB.deadline).valueOf() : 9999999999999;
+                        return dateA - dateB;
+                    }
+                }
             });
             this.currentQuestList = files;
         }
@@ -310,30 +363,138 @@ export class PanopticonView extends ItemView {
         }
     }
 
-    setupAnalyticsStructure(parent: HTMLElement) {
+    renderAnalyticsDashboard(parent: HTMLElement, weekComp: any[], widthOverride?: number) {
+        const s = this.plugin.settings;
         const stats = this.plugin.engine.getGameStats();
-        const g = parent.createDiv({ cls: "sisy-hud" });
-        this.stat(g, "Streak", String(stats.currentStreak));
-        this.stat(g, "Today", String(this.plugin.settings.questsCompletedToday));
+        const metrics = s.dayMetrics || [];
 
-        parent.createEl("h4", { text: "Activity (7 Days)" });
-        parent.createDiv({ cls: "sisy-chart-container-line" });
-        parent.createEl("h4", { text: "Heatmap" });
-        parent.createDiv({ cls: "sisy-chart-container-heat" });
-    }
+        // --- Tab bar ---
+        const tabBar = parent.createDiv({ cls: 'sisy-analytics-tabs' });
+        const tabs = [
+            { id: 'overview', label: '📊 Overview' },
+            { id: 'activity', label: '📈 Activity' },
+            { id: 'insights', label: '💡 Insights' },
+        ];
 
-    // [FIX] Accept widthOverride to enable off-screen rendering
-    renderAnalyticsCharts(parent: HTMLElement, widthOverride?: number) {
-        const lineContainer = parent.querySelector(".sisy-chart-container-line") as HTMLElement;
-        const heatContainer = parent.querySelector(".sisy-chart-container-heat") as HTMLElement;
+        const tabContent = parent.createDiv({ cls: 'sisy-analytics-content' });
 
-        if (lineContainer) {
-            lineContainer.empty();
-            ChartRenderer.renderLineChart(lineContainer, this.plugin.settings.dayMetrics, widthOverride);
+        tabs.forEach(t => {
+            const btn = tabBar.createEl('button', { text: t.label, cls: 'sisy-analytics-tab-btn' });
+            if (this.analyticsTab === t.id) btn.addClass('sisy-analytics-tab-active');
+            btn.onclick = () => {
+                this.analyticsTab = t.id;
+                this.debouncedRefresh();
+            };
+        });
+
+        // --- Compute common stats ---
+        const totalCompleted = metrics.reduce((s: number, d: any) => s + (d.questsCompleted || 0), 0);
+        const totalFailed = metrics.reduce((s: number, d: any) => s + (d.questsFailed || 0), 0);
+        const totalAttempted = totalCompleted + totalFailed;
+        const successRate = totalAttempted > 0 ? Math.round((totalCompleted / totalAttempted) * 100) : 100;
+
+        // Find best day
+        let bestDay = '—';
+        let bestCount = 0;
+        metrics.forEach((d: any) => {
+            if ((d.questsCompleted || 0) > bestCount) {
+                bestCount = d.questsCompleted;
+                bestDay = d.date;
+            }
+        });
+
+        // === TAB: OVERVIEW ===
+        if (this.analyticsTab === 'overview') {
+            // Summary cards (2x2 grid)
+            const cards = tabContent.createDiv({ cls: 'sisy-summary-cards' });
+
+            const makeCard = (icon: string, label: string, value: string, sub?: string) => {
+                const card = cards.createDiv({ cls: 'sisy-summary-card' });
+                card.createDiv({ text: icon, cls: 'sisy-summary-card-icon' });
+                card.createDiv({ text: value, cls: 'sisy-summary-card-val' });
+                card.createDiv({ text: label, cls: 'sisy-summary-card-label' });
+                if (sub) card.createDiv({ text: sub, cls: 'sisy-summary-card-sub' });
+            };
+
+            makeCard('📋', "Today's Quests", String(s.questsCompletedToday));
+            makeCard('🔥', 'Current Streak', `${stats.currentStreak}d`);
+            makeCard('🎯', 'Success Rate', `${successRate}%`, `${totalCompleted}/${totalAttempted}`);
+            makeCard('🏆', 'Best Day', bestCount > 0 ? String(bestCount) : '—', bestDay !== '—' ? moment(bestDay).format('MMM D') : '');
+
+            // Week comparison
+            tabContent.createDiv({ text: 'This Week vs Last Week', cls: 'sisy-analytics-subtitle' });
+            const compGrid = tabContent.createDiv({ cls: 'sisy-week-compare' });
+            weekComp.forEach((c: any) => {
+                const item = compGrid.createDiv({ cls: 'sisy-week-compare-item' });
+                item.createDiv({ text: c.label, cls: 'sisy-week-compare-label' });
+                item.createDiv({ text: String(c.thisWeek), cls: 'sisy-week-compare-val' });
+                item.createDiv({ text: c.delta, cls: `sisy-stat-delta ${c.up ? 'sisy-stat-delta-up' : 'sisy-stat-delta-down'}` });
+            });
+
+            // Skill radar
+            if (s.skills.length >= 3) {
+                tabContent.createDiv({ text: 'Skill Profile', cls: 'sisy-analytics-subtitle' });
+                const radarWrap = tabContent.createDiv({ cls: 'sisy-profile-radar' });
+                const sorted = [...s.skills].sort((a: any, b: any) => b.level - a.level);
+                ChartRenderer.renderRadar(radarWrap, sorted);
+            }
         }
-        if (heatContainer) {
-            heatContainer.empty();
-            ChartRenderer.renderHeatmap(heatContainer, this.plugin.settings.dayMetrics);
+
+        // === TAB: ACTIVITY ===
+        if (this.analyticsTab === 'activity') {
+            // GitHub Heatmap
+            tabContent.createDiv({ text: 'Contribution Heatmap (365 Days)', cls: 'sisy-analytics-subtitle' });
+            const heatContainer = tabContent.createDiv({ cls: 'sisy-chart-container-heat' });
+            ChartRenderer.renderGitHubHeatmap(heatContainer, metrics);
+
+            // Time-of-day chart
+            tabContent.createDiv({ text: 'Productivity by Hour', cls: 'sisy-analytics-subtitle' });
+            const todContainer = tabContent.createDiv();
+            ChartRenderer.renderTimeOfDay(todContainer, metrics);
+
+            // 7-day line chart
+            tabContent.createDiv({ text: 'Activity (7 Days)', cls: 'sisy-analytics-subtitle' });
+            const lineContainer = tabContent.createDiv({ cls: 'sisy-chart-container-line' });
+            ChartRenderer.renderLineChart(lineContainer, metrics, widthOverride);
+        }
+
+        // === TAB: INSIGHTS ===
+        if (this.analyticsTab === 'insights') {
+            const insightsGrid = tabContent.createDiv({ cls: 'sisy-insights-grid' });
+
+            // Success ring
+            const ringWrap = insightsGrid.createDiv({ cls: 'sisy-insights-ring' });
+            ringWrap.createDiv({ text: 'Overall Success', cls: 'sisy-analytics-subtitle' });
+            ChartRenderer.renderSuccessRing(ringWrap, successRate, totalAttempted);
+
+            // Difficulty breakdown
+            const diffWrap = insightsGrid.createDiv({ cls: 'sisy-insights-diff' });
+            diffWrap.createDiv({ text: 'Difficulty Breakdown', cls: 'sisy-analytics-subtitle' });
+            ChartRenderer.renderDifficultyBreakdown(diffWrap, s.difficultyStats);
+
+            // Calibration suggestion
+            if (s.difficultyStats?.suggestedAdjustment && s.difficultyStats.suggestedAdjustment !== 0) {
+                const adj = s.difficultyStats.suggestedAdjustment;
+                const msg = adj > 0
+                    ? '📈 You\'re crushing it! Consider increasing difficulty.'
+                    : '📉 Struggling? Try lowering difficulty a notch.';
+                const banner = tabContent.createDiv({ cls: `sisy-calibration-banner sisy-calibration-${adj > 0 ? 'up' : 'down'}` });
+                banner.createSpan({ text: msg });
+            }
+
+            // Top skills
+            tabContent.createDiv({ text: 'Top Skills', cls: 'sisy-analytics-subtitle' });
+            const skillList = tabContent.createDiv({ cls: 'sisy-top-skills' });
+            const sortedSkills = [...(s.skills || [])].sort((a: any, b: any) => b.level - a.level).slice(0, 5);
+            sortedSkills.forEach((sk: any, idx: number) => {
+                const row = skillList.createDiv({ cls: 'sisy-top-skill-row' });
+                row.createSpan({ text: `#${idx + 1}`, cls: 'sisy-top-skill-rank' });
+                row.createSpan({ text: sk.name, cls: 'sisy-top-skill-name' });
+                row.createSpan({ text: `Lv.${sk.level}`, cls: 'sisy-top-skill-level' });
+                const xpBar = row.createDiv({ cls: 'sisy-top-skill-bar' });
+                const pct = sk.xpReq > 0 ? Math.min(100, (sk.xp / sk.xpReq) * 100) : 0;
+                xpBar.createDiv({ cls: 'sisy-top-skill-fill', attr: { style: `width:${pct}%` } });
+            });
         }
     }
 
@@ -463,34 +624,159 @@ export class PanopticonView extends ItemView {
     }
 
     renderFilterBar(parent: HTMLElement) {
-        const getFreshState = () => this.plugin.settings.filterState;
-        const d = parent.createDiv({ cls: "sisy-filter-bar" });
+        const fe = this.plugin.engine.filtersEngine;
+        const f = this.plugin.settings.filterState;
+        const activeCount = fe.getActiveFilterCount();
 
-        const addRow = (l: string, opts: string[], curr: string, cb: any) => {
-            const r = d.createDiv({ cls: "sisy-filter-row" });
-            r.createSpan({ text: l, cls: "sisy-filter-label" });
-            opts.forEach(o => {
-                const btn = r.createEl("button", { text: o.toUpperCase(), cls: "sisy-filter-btn" });
-                if (curr === o) btn.addClass("sisy-filter-active");
-                btn.onclick = () => cb(o);
+        // Count total and filtered quests for summary
+        const folder = this.app.vault.getAbstractFileByPath("Active_Run/Quests");
+        let totalQuests = 0;
+        if (folder instanceof TFolder) {
+            totalQuests = folder.children.filter(c => c instanceof TFile).length;
+        }
+        const shownQuests = this.currentQuestList.length;
+
+        const panel = parent.createDiv({ cls: 'sisy-filter-panel' });
+
+        // --- Header row (always visible) ---
+        const header = panel.createDiv({ cls: 'sisy-filter-header' });
+        const headerLeft = header.createDiv({ cls: 'sisy-filter-header-left' });
+        headerLeft.createSpan({ text: '⚙', cls: 'sisy-filter-icon' });
+        headerLeft.createSpan({ text: 'FILTERS', cls: 'sisy-filter-title' });
+        if (activeCount > 0) {
+            headerLeft.createSpan({ text: String(activeCount), cls: 'sisy-filter-badge' });
+        }
+        const headerRight = header.createDiv({ cls: 'sisy-filter-header-right' });
+        headerRight.createSpan({ text: `${shownQuests}/${totalQuests}`, cls: 'sisy-filter-count' });
+        const toggleIcon = headerRight.createSpan({ text: '▼', cls: 'sisy-filter-toggle' });
+
+        // --- Collapsible body ---
+        const body = panel.createDiv({ cls: 'sisy-filter-body' });
+        if (activeCount === 0) {
+            body.addClass('sisy-filter-collapsed');
+            toggleIcon.textContent = '▶';
+        }
+
+        header.onclick = () => {
+            body.classList.toggle('sisy-filter-collapsed');
+            toggleIcon.textContent = body.classList.contains('sisy-filter-collapsed') ? '▶' : '▼';
+        };
+
+        // --- Helper: pill row ---
+        const addPillRow = (label: string, options: { value: string; label: string }[], current: string, onToggle: (v: string) => void) => {
+            const row = body.createDiv({ cls: 'sisy-filter-row' });
+            row.createSpan({ text: label, cls: 'sisy-filter-label' });
+            const pills = row.createDiv({ cls: 'sisy-filter-pills' });
+            options.forEach(o => {
+                const pill = pills.createEl('button', { text: o.label, cls: 'sisy-filter-pill' });
+                if (current === o.value) pill.addClass('sisy-filter-pill-active');
+                pill.onclick = (e) => { e.stopPropagation(); onToggle(o.value); };
             });
         };
 
-        const f = getFreshState();
-        addRow("Energy:", ["any", "high", "medium"], f.activeEnergy, (v: any) => {
-            const s = getFreshState();
-            const newVal = (s.activeEnergy === v && v !== "any") ? "any" : v;
-            this.plugin.engine.setFilterState(newVal, s.activeContext, s.activeTags);
-            this.debouncedRefresh();
-        });
-        addRow("Context:", ["any", "home", "office"], f.activeContext, (v: any) => {
-            const s = getFreshState();
-            const newVal = (s.activeContext === v && v !== "any") ? "any" : v;
-            this.plugin.engine.setFilterState(s.activeEnergy, newVal, s.activeTags);
+        // --- Energy pills ---
+        addPillRow('Energy', [
+            { value: 'high', label: '⚡ High' },
+            { value: 'medium', label: '🔋 Med' },
+            { value: 'low', label: '🪫 Low' },
+        ], f.activeEnergy, (v) => {
+            fe.toggleEnergyFilter(v as any);
+            this.plugin.engine.save();
             this.debouncedRefresh();
         });
 
-        d.createEl("button", { text: "CLEAR", cls: "sisy-btn mod-fail", attr: { style: "width:100%; margin-top:5px;" } }).onclick = () => { this.plugin.engine.clearFilters(); this.debouncedRefresh(); };
+        // --- Context pills ---
+        addPillRow('Context', [
+            { value: 'home', label: '🏠 Home' },
+            { value: 'office', label: '💼 Office' },
+            { value: 'anywhere', label: '🌍 Any' },
+        ], f.activeContext, (v) => {
+            fe.toggleContextFilter(v as any);
+            this.plugin.engine.save();
+            this.debouncedRefresh();
+        });
+
+        // --- Difficulty stars ---
+        const diffRow = body.createDiv({ cls: 'sisy-filter-row' });
+        diffRow.createSpan({ text: 'Difficulty', cls: 'sisy-filter-label' });
+        const diffPills = diffRow.createDiv({ cls: 'sisy-filter-pills' });
+        for (let i = 1; i <= 5; i++) {
+            const star = diffPills.createEl('button', { text: '★'.repeat(i), cls: 'sisy-filter-pill sisy-filter-star' });
+            if (f.activeDifficulty === i) star.addClass('sisy-filter-pill-active');
+            star.onclick = (e) => {
+                e.stopPropagation();
+                fe.toggleDifficultyFilter(i);
+                this.plugin.engine.save();
+                this.debouncedRefresh();
+            };
+        }
+
+        // --- Skill dropdown ---
+        const skillRow = body.createDiv({ cls: 'sisy-filter-row' });
+        skillRow.createSpan({ text: 'Skill', cls: 'sisy-filter-label' });
+        const skillSelect = skillRow.createEl('select', { cls: 'sisy-filter-select' });
+        const skillOpt0 = skillSelect.createEl('option', { text: 'All Skills' });
+        skillOpt0.value = 'any';
+        const skillNames = this.plugin.settings.skills.map((s: any) => s.name).sort();
+        skillNames.forEach((name: string) => {
+            const opt = skillSelect.createEl('option', { text: name });
+            opt.value = name;
+        });
+        skillSelect.value = String(f.activeSkill);
+        skillSelect.onchange = () => {
+            fe.toggleSkillFilter(skillSelect.value);
+            this.plugin.engine.save();
+            this.debouncedRefresh();
+        };
+
+        // --- Sort dropdown ---
+        const sortRow = body.createDiv({ cls: 'sisy-filter-row' });
+        sortRow.createSpan({ text: 'Sort', cls: 'sisy-filter-label' });
+        const sortSelect = sortRow.createEl('select', { cls: 'sisy-filter-select' });
+        const sortOpts: { value: string; label: string }[] = [
+            { value: 'deadline', label: '⏰ Urgent First' },
+            { value: 'easyFirst', label: '🟢 Easy First' },
+            { value: 'hardFirst', label: '🔴 Hard First' },
+            { value: 'newest', label: '🆕 Newest First' },
+        ];
+        sortOpts.forEach(o => {
+            const opt = sortSelect.createEl('option', { text: o.label });
+            opt.value = o.value;
+        });
+        sortSelect.value = f.sortMode || 'deadline';
+        sortSelect.onchange = () => {
+            fe.setSortMode(sortSelect.value as any);
+            this.plugin.engine.save();
+            this.debouncedRefresh();
+        };
+
+        // --- Tag chips ---
+        const availableTags = fe.getAvailableTags();
+        if (availableTags.length > 0) {
+            const tagRow = body.createDiv({ cls: 'sisy-filter-row sisy-filter-tag-row' });
+            tagRow.createSpan({ text: 'Tags', cls: 'sisy-filter-label' });
+            const tagWrap = tagRow.createDiv({ cls: 'sisy-filter-chips' });
+            availableTags.forEach(tag => {
+                const chip = tagWrap.createEl('button', { text: `#${tag}`, cls: 'sisy-filter-chip' });
+                if (f.activeTags.includes(tag)) chip.addClass('sisy-filter-chip-active');
+                chip.onclick = (e) => {
+                    e.stopPropagation();
+                    fe.toggleTag(tag);
+                    this.plugin.engine.save();
+                    this.debouncedRefresh();
+                };
+            });
+        }
+
+        // --- Clear all ---
+        if (activeCount > 0) {
+            const clearBtn = body.createEl('button', { text: `✕ CLEAR ALL (${activeCount})`, cls: 'sisy-filter-clear' });
+            clearBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.plugin.engine.clearFilters();
+                this.debouncedRefresh();
+            };
+        }
     }
 
     stat(p: HTMLElement, label: string, val: string, cls: string = "") {
@@ -538,5 +824,116 @@ export class PanopticonView extends ItemView {
                 callback: () => this.plugin.engine.undoLastDeletion()
             }
         });
+    }
+
+    scrollToSection(sectionId: string) {
+        const container = this.containerEl.querySelector('.sisy-scroll-area');
+        const anchor = this.containerEl.querySelector(`#sisy-${sectionId}-anchor`);
+        if (container && anchor) {
+            anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    renderBossRush(parent: HTMLElement) {
+        const progress = BossRushEngine.getProgress(this.plugin.settings);
+        const rushBox = parent.createDiv({ cls: 'sisy-boss-rush-panel' });
+
+        const header = rushBox.createDiv({ cls: 'sisy-rush-header' });
+        header.createSpan({ text: `⚔️ QUEST ${progress.current + 1}/${progress.total}` });
+
+        const bar = rushBox.createDiv({ cls: 'sisy-bar-bg' });
+        const pct = progress.total > 0 ? (progress.current / progress.total) * 100 : 0;
+        bar.createDiv({ cls: 'sisy-bar-fill sisy-fill-red', attr: { style: `width: ${pct}%;` } });
+
+        const queue = rushBox.createDiv({ cls: 'sisy-rush-queue' });
+        progress.queueNames.forEach((name, i) => {
+            const item = queue.createDiv({ cls: 'sisy-rush-item' });
+            const status = i < progress.current ? '✅' : i === progress.current ? '⚔️' : '⬜';
+            item.createSpan({ text: `${status} ${name}` });
+            if (i === progress.current) item.addClass('sisy-rush-active');
+            else if (i < progress.current) item.addClass('sisy-rush-done');
+        });
+
+        const abortBtn = rushBox.createEl('button', { text: '💀 ABORT RUSH', cls: 'sisy-btn mod-fail', attr: { style: 'width:100%; margin-top:8px;' } });
+        abortBtn.onclick = async () => {
+            BossRushEngine.failRush(this.plugin.settings);
+            await this.plugin.saveSettings();
+            this.debouncedRefresh();
+        };
+    }
+
+    renderBountyBoard(parent: HTMLElement, bounties: Bounty[]) {
+        bounties.forEach(bounty => {
+            const card = parent.createDiv({ cls: 'sisy-bounty-card' });
+
+            const top = card.createDiv({ cls: 'sisy-card-top' });
+            top.createSpan({ text: `🎯 ${bounty.name}`, cls: 'sisy-card-title' });
+            top.createSpan({ text: `${bounty.reward.multiplier}x`, cls: 'sisy-bounty-mult' });
+
+            card.createDiv({ text: bounty.description, cls: 'sisy-bounty-desc' });
+            card.createDiv({ text: bounty.reason, cls: 'sisy-bounty-reason' });
+
+            const rewards = card.createDiv({ cls: 'sisy-card-detail' });
+            rewards.createSpan({ text: `⭐ ${bounty.reward.xp} XP`, cls: 'sisy-card-reward sisy-reward-xp' });
+            rewards.createSpan({ text: `💰 ${bounty.reward.gold} G`, cls: 'sisy-card-reward sisy-reward-gold' });
+            if (bounty.targetSkill) {
+                rewards.createSpan({ text: `🎯 ${bounty.targetSkill}`, cls: 'sisy-tag' });
+            }
+
+            const actions = card.createDiv({ cls: 'sisy-actions' });
+            const acceptBtn = actions.createEl('button', { text: '✅ Accept', cls: 'sisy-btn mod-done sisy-action-btn' });
+            acceptBtn.onclick = async () => {
+                BountyEngine.acceptBounty(this.plugin.settings, bounty.id);
+                await this.plugin.saveSettings();
+                this.debouncedRefresh();
+            };
+
+            const dismissBtn = actions.createEl('button', { text: '❌ Dismiss', cls: 'sisy-btn mod-fail sisy-action-btn' });
+            dismissBtn.onclick = async () => {
+                BountyEngine.dismissBounty(this.plugin.settings, bounty.id);
+                await this.plugin.saveSettings();
+                this.debouncedRefresh();
+            };
+        });
+    }
+
+    renderNotifications(parent: HTMLElement, notifications: import('../types').GameNotification[]) {
+        const feed = parent.createDiv({ cls: 'sisy-notification-feed' });
+
+        const toolbar = feed.createDiv({ cls: 'sisy-notif-toolbar' });
+        const markReadBtn = toolbar.createEl('button', { text: '✓ Mark all read', cls: 'sisy-btn' });
+        markReadBtn.style.fontSize = '0.75em';
+        markReadBtn.onclick = async () => {
+            NotificationEngine.markAllRead(this.plugin.settings);
+            await this.plugin.saveSettings();
+            this.debouncedRefresh();
+        };
+        const clearBtn = toolbar.createEl('button', { text: '🗑️ Clear', cls: 'sisy-btn' });
+        clearBtn.style.fontSize = '0.75em';
+        clearBtn.onclick = async () => {
+            NotificationEngine.clear(this.plugin.settings);
+            await this.plugin.saveSettings();
+            this.debouncedRefresh();
+        };
+
+        notifications.forEach(n => {
+            const item = feed.createDiv({ cls: `sisy-notif-item ${n.read ? '' : 'sisy-notif-unread'}` });
+            item.createSpan({ text: n.icon, cls: 'sisy-notif-icon' });
+
+            const content = item.createDiv({ cls: 'sisy-notif-content' });
+            content.createDiv({ text: n.title, cls: 'sisy-notif-title' });
+            content.createDiv({ text: n.message, cls: 'sisy-notif-message' });
+
+            const ago = this.timeAgo(n.timestamp);
+            item.createSpan({ text: ago, cls: 'sisy-notif-time' });
+        });
+    }
+
+    private timeAgo(timestamp: string): string {
+        const seconds = Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000);
+        if (seconds < 60) return 'just now';
+        if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+        return `${Math.floor(seconds / 86400)}d ago`;
     }
 }

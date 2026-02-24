@@ -1,65 +1,90 @@
-# 🏔️ Sisyphus Engine for Obsidian
+# ⚔️ SISYPHUS ENGINE
 
-> **"One must imagine Sisyphus happy. But Sisyphus must also get to work."**
-
-![Version](https://img.shields.io/badge/version-2.5.0-blueviolet?style=for-the-badge) ![Platform](https://img.shields.io/badge/platform-Obsidian-black?style=for-the-badge) ![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)
-
-**Sisyphus Engine** is a high-stakes gamification OS for Obsidian. It replaces your todo list with a roguelike RPG system where productivity dictates survival. 
-
-**Core Rule:** If your HP hits 0, the run ends. Your level, gold, and progress are wiped. You keep only your "Scars."
+An absurd gamification engine for [Obsidian](https://obsidian.md). Transform your note-taking into a Dark Souls-inspired survival RPG — complete quests, level skills, fight bosses, dodge death, and push the boulder up the hill, forever.
 
 ---
 
-## ⚡ Quick Start
+## ✨ Features
 
-### **1. Installation**
-Since Sisyphus is an engine, it requires manual placement of the core files.
+### Core Systems
+- **Quest System** — Create quests as markdown files with difficulty, skill tags, deadlines, and energy/context metadata. Drag-and-drop organization.
+- **Skill Tree** — SVG-based skill grid with neural connections, XP progression, and visual decay when skills are neglected.
+- **HP & Survival** — Take damage from failed quests and inactivity. Drop to zero and you die — resetting your run but keeping permanent scars.
+- **Gold Economy** — Earn gold from quests, spend it in the shop on potions, scrolls, and relics.
+- **Rival AI** — A persistent AI opponent that taunts you, gains XP when you fail, and evolves based on your performance.
+- **Achievement System** — 20+ achievements across combat, productivity, and exploration categories.
 
-1. **Locate your Plugin Folder:**
-   * **Windows:** `\Path\To\Vault\.obsidian\plugins\sisyphus-engine\`
-   * **Mac/Linux:** `~/.config/obsidian/Vault/.obsidian/plugins/sisyphus-engine/`
-2. **Deploy Files:** * Copy `main.js`, `styles.css`, and `manifest.json` into this folder.
-   * **CRITICAL:** You must also move the `src/` folder into the plugin directory for the engine to reference local assets and templates correctly.
-3. **Activate:** Open Obsidian Settings > Community Plugins > Enable **Sisyphus Engine**.
-4. **Initialize:** Press `Ctrl/Cmd + P` and run `Sisyphus: Open Panopticon`.
+### Panopticon Sidebar
+The **Panopticon** is your command center — a sidebar view showing real-time stats, active quests, bounties, notifications, and more. Features:
+- **⚡ Command Hub** — A categorized feature grid (press ⚡ or `Ctrl+⚡`) for instant access to all commands.
+- **🔔 Notification Center** — A persistent event feed tracking achievements, quest completions, rival actions, and system events.
+- **🎯 Bounty Board** — Auto-generated quests based on neglected skills, with bonus XP/gold multipliers.
+- **⚔️ Boss Rush Mode** — Queue multiple quests for a gauntlet — complete them all for massive bonus rewards, or fail for nothing.
+- **📅 Recurring Quests** — Schedule quests to auto-deploy daily, weekly, or monthly.
 
-### **2. The Loop**
-1. **Deploy Quests:** Press `Ctrl/Cmd + D` to create tasks. Assign difficulty (1-5) and deadlines.
-2. **Do The Work:** Complete tasks in real life.
-3. **Log It:** Click "Complete" in the HUD to earn XP/Gold.
-4. **Survive:** If you miss deadlines or fail quests, you take Damage. If HP hits 0, you die.
+### Smart Filters
+- **Collapsible Filter Panel** — 5-dimension filtering: Energy, Context, Difficulty (★-★★★★★), Skill, and Tags.
+- **Sort Modes** — Urgent First (deadline), Easy First, Hard First, Newest First.
+- **Live Match Count** — Shows `X/Y` quests matching current filters.
+- **Tag Chips** — One-click toggle for custom quest tags.
 
----
+### Analytics Dashboard (Tabbed)
+- **📊 Overview** — 4 summary cards (Today's Quests, Streak, Success Rate, Best Day), week-over-week comparison, skill radar chart.
+- **📈 Activity** — GitHub-style 365-day heatmap, hourly productivity chart, 7-day line chart.
+- **💡 Insights** — Success rate ring chart, difficulty tier breakdown with per-tier success bars, calibration suggestion banner, top skills ranking.
+- **Difficulty Auto-Calibration** — Tracks completion rates per difficulty level and suggests adjustments.
 
-## 📚 Documentation & Wiki
+### Customization
+- **4 Visual Themes** — Default (Purple), Cyberpunk (Neon), Dark Souls (Gritty), Minimal (Monochrome), Terminal (Green-on-black).
+- **Per-Module Settings** — Each game module exposes its own configuration in the settings tab.
+- **Game Modes** — Full, Pacifist, Zen, Hardcore, or Custom module selection.
+- **Quest Templates** — Pre-configured templates for rapid quest deployment.
 
-This engine is deep. For detailed mechanics, boss data, and formulas, consult the **[Official Wiki](WIKI.md)**.
-
-* **[HUD & Vitals](WIKI.md#1-the-panopticon-hud)** - Understanding HP, Gold, and Glitches.
-* **[The Mechanics](WIKI.md#2-core-gameplay-loop)** - Experience, Leveling, and Risk.
-* **[Boss Data](WIKI.md#10-boss-system)** - HP values and spawn thresholds for all 4 bosses.
-* **[DLC Content](WIKI.md#4-dlc-1-daily-missions--scraps)** - Research, Meditation, and Chains.
-
----
-
-## ⌨️ Controls
-
-| Hotkey | Command | Action |
-|:---|:---|:---|
-| `Ctrl/Cmd + D` | Deploy Quest | Open quest creation modal |
-| `Ctrl/Cmd + Shift + Z` | Undo Deletion | Restore last deleted quest (60s) |
-| `Ctrl/Cmd + Shift + C` | Quick Capture | Dump thought to Inbox |
-
-**Quick Capture Syntax:**
-Type in the HUD input bar:
-* `Task /1` → Trivial
-* `Task /5` → SUICIDE Difficulty
-* `Task` → Medium (Default)
+### Additional Systems
+- **Quest Chains** — Multi-step quest sequences with progress tracking.
+- **Research Quests** — Long-form, word-count-based research projects.
+- **Pomodoro Timer** — Built-in focus timer with audio notifications.
+- **Meditation & Recovery** — Lockdown recovery mechanics and rest day system.
+- **Focus Audio** — Brown noise generator for deep work sessions.
+- **Character Profile** — Full character sheet modal with stats, skills, and history.
 
 ---
 
-## 🤝 Community
+## 🚀 Installation
 
-* **Report Bugs:** GitHub Issues
+1. Copy the plugin folder to your vault's `.obsidian/plugins/sisyphus-engine/` directory.
+2. Enable the plugin in Obsidian Settings → Community Plugins.
+3. The Panopticon sidebar opens automatically. You can also run `Sisyphus: Open Panopticon` from the command palette.
 
-**Remember:** One must imagine Sisyphus happy. But Sisyphus must also get to work.
+---
+
+## ⌨️ Hotkeys
+
+| Hotkey | Action |
+|---|---|
+| `Ctrl+D` | Deploy Quest |
+| `Ctrl+Shift+X` | Quick Capture |
+| `Ctrl+Shift+C` | Complete Top Quest |
+| `Ctrl+Shift+W` | Weekly Review |
+| `Ctrl+Shift+P` | Character Profile |
+| `Ctrl+Shift+M` | Start Meditation |
+| `Ctrl+Shift+Z` | Undo Last Deletion |
+
+---
+
+## 🏗️ Architecture
+
+The engine uses a **modular kernel architecture**:
+
+- **Kernel** — Central event bus, state management, and service registry.
+- **Modules** — 8 pluggable modules (Survival, Progression, Economy, Combat, Productivity, Analytics, Recovery, Daily Lifecycle) that subscribe to kernel events.
+- **Engines** — Static utility classes (Achievement, Rival, Difficulty, Bounty, Recurring, Boss Rush, Notification) that operate on the shared state.
+- **UI** — Panopticon sidebar view, modal dialogs, SVG renderers, and CSS-variable-based theming.
+
+See [WIKI.md](./WIKI.md) for detailed documentation.
+
+---
+
+## 📄 License
+
+MIT

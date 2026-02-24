@@ -399,4 +399,93 @@ export class ChartRenderer {
             if (i === 0) day.style.border = "1px solid white";
         }
     }
+
+    /* ============================================================
+     * 7. DIFFICULTY BREAKDOWN — horizontal bars per tier
+     * ============================================================ */
+    static renderDifficultyBreakdown(parent: HTMLElement, diffStats: any) {
+        if (!diffStats) return;
+        const container = parent.createDiv({ cls: 'sisy-diff-breakdown' });
+        const completions: number[] = diffStats.completions || [0, 0, 0, 0, 0];
+        const failures: number[] = diffStats.failures || [0, 0, 0, 0, 0];
+        const colors = ['#39d353', '#8bc34a', '#ffc107', '#ff9800', '#f44336'];
+        const labels = ['★', '★★', '★★★', '★★★★', '★★★★★'];
+
+        for (let i = 0; i < 5; i++) {
+            const total = completions[i] + failures[i];
+            const rate = total > 0 ? Math.round((completions[i] / total) * 100) : 0;
+
+            const row = container.createDiv({ cls: 'sisy-diff-bar-row' });
+            row.createSpan({ text: labels[i], cls: 'sisy-diff-bar-label' });
+            const barBg = row.createDiv({ cls: 'sisy-diff-bar-bg' });
+            const barFill = barBg.createDiv({ cls: 'sisy-diff-bar-fill' });
+            barFill.style.width = `${rate}%`;
+            barFill.style.background = colors[i];
+            row.createSpan({ text: total > 0 ? `${rate}%` : '—', cls: 'sisy-diff-bar-pct' });
+            row.createSpan({ text: `(${completions[i]}/${total})`, cls: 'sisy-diff-bar-count' });
+        }
+    }
+
+    /* ============================================================
+     * 8. SUCCESS RING — SVG donut chart
+     * ============================================================ */
+    static renderSuccessRing(parent: HTMLElement, successRate: number, totalQuests: number) {
+        const SIZE = 100, CX = SIZE / 2, CY = SIZE / 2, R = 38, STROKE = 8;
+        const circumference = 2 * Math.PI * R;
+        const offset = circumference * (1 - successRate / 100);
+
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("viewBox", `0 0 ${SIZE} ${SIZE}`);
+        svg.setAttribute("width", "100");
+        svg.setAttribute("height", "100");
+        svg.classList.add("sisy-success-ring");
+        parent.appendChild(svg);
+
+        // Background ring
+        const bgCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        bgCircle.setAttribute("cx", String(CX));
+        bgCircle.setAttribute("cy", String(CY));
+        bgCircle.setAttribute("r", String(R));
+        bgCircle.setAttribute("fill", "none");
+        bgCircle.setAttribute("stroke", "rgba(255,255,255,0.08)");
+        bgCircle.setAttribute("stroke-width", String(STROKE));
+        svg.appendChild(bgCircle);
+
+        // Foreground ring
+        const fgCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        fgCircle.setAttribute("cx", String(CX));
+        fgCircle.setAttribute("cy", String(CY));
+        fgCircle.setAttribute("r", String(R));
+        fgCircle.setAttribute("fill", "none");
+        const ringColor = successRate >= 70 ? 'var(--sisy-green)' : successRate >= 40 ? 'var(--sisy-gold)' : 'var(--sisy-red)';
+        fgCircle.setAttribute("stroke", ringColor);
+        fgCircle.setAttribute("stroke-width", String(STROKE));
+        fgCircle.setAttribute("stroke-linecap", "round");
+        fgCircle.setAttribute("stroke-dasharray", String(circumference));
+        fgCircle.setAttribute("stroke-dashoffset", String(offset));
+        fgCircle.setAttribute("transform", `rotate(-90 ${CX} ${CY})`);
+        svg.appendChild(fgCircle);
+
+        // Center text
+        const pctText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        pctText.setAttribute("x", String(CX));
+        pctText.setAttribute("y", String(CY - 2));
+        pctText.setAttribute("text-anchor", "middle");
+        pctText.setAttribute("dominant-baseline", "middle");
+        pctText.setAttribute("font-size", "18");
+        pctText.setAttribute("font-weight", "800");
+        pctText.setAttribute("fill", "var(--text-normal)");
+        pctText.textContent = `${Math.round(successRate)}%`;
+        svg.appendChild(pctText);
+
+        // Sub text
+        const subText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        subText.setAttribute("x", String(CX));
+        subText.setAttribute("y", String(CY + 14));
+        subText.setAttribute("text-anchor", "middle");
+        subText.setAttribute("font-size", "8");
+        subText.setAttribute("fill", "var(--text-muted)");
+        subText.textContent = `${totalQuests} quests`;
+        svg.appendChild(subText);
+    }
 }

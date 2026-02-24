@@ -32,4 +32,15 @@ export class RecoveryModule extends GameModule {
             this.unsubscribeClockTick = null;
         }
     }
+
+    renderSettings(container: HTMLElement): void {
+        if (!this.kernel) return;
+        const settings = this.kernel.state;
+
+        const section = container.createDiv({ cls: 'sisy-module-settings' });
+        section.createEl('h4', { text: '🧘 Recovery Settings' });
+        section.createEl('p', { text: `Active Buffs: ${(settings.activeBuffs || []).length}`, attr: { style: 'font-size:0.85em; color:var(--text-muted);' } });
+        section.createEl('p', { text: `Shield: ${settings.shieldedUntil ? 'Active' : 'Inactive'}`, attr: { style: 'font-size:0.85em; color:var(--text-muted);' } });
+        section.createEl('p', { text: `Rest Day: ${settings.restDayUntil ? 'Active' : 'Inactive'}`, attr: { style: 'font-size:0.85em; color:var(--text-muted);' } });
+    }
 }

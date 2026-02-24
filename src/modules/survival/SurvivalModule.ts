@@ -76,4 +76,15 @@ export class SurvivalModule extends GameModule {
             this.unsubscribeQuestCompleted = null;
         }
     }
+
+    renderSettings(container: HTMLElement): void {
+        if (!this.kernel) return;
+        const settings = this.kernel.state;
+
+        const section = container.createDiv({ cls: 'sisy-module-settings' });
+        section.createEl('h4', { text: '🛡️ Survival Settings' });
+        section.createEl('p', { text: `Max HP: ${settings.maxHp} (100 + Level × 5)`, attr: { style: 'font-size:0.85em; color:var(--text-muted);' } });
+        section.createEl('p', { text: `Current HP: ${settings.hp}/${settings.maxHp}`, attr: { style: 'font-size:0.85em; color:var(--text-muted);' } });
+        section.createEl('p', { text: `Damage Today: ${settings.damageTakenToday}`, attr: { style: 'font-size:0.85em; color:var(--text-muted);' } });
+    }
 }

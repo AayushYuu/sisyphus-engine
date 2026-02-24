@@ -10,7 +10,13 @@ import { SisyphusKernel } from './core/Kernel';
 import { GlobalConfig, StateManager } from './core/StateManager';
 import { AchievementEngine } from './engines/AchievementEngine';
 import { RivalEngine } from './engines/RivalEngine';
+import { DifficultyCalibrator } from './engines/DifficultyCalibrator';
+import { BountyEngine } from './engines/BountyEngine';
+import { RecurringEngine } from './engines/RecurringEngine';
+import { BossRushEngine } from './engines/BossRushEngine';
+import { NotificationEngine } from './engines/NotificationEngine';
 import { ProfileModal } from './ui/profile';
+import { CommandHubModal } from './ui/commandhub';
 import { ProgressionModule } from './modules/progression/ProgressionModule';
 import { EconomyModule } from './modules/economy/EconomyModule';
 import { SurvivalModule } from './modules/survival/SurvivalModule';
@@ -57,7 +63,7 @@ const DEFAULT_SETTINGS: SisyphusSettings = {
     currentChainId: "",
     chainQuestsCompleted: 0,
     questFilters: {},
-    filterState: { activeEnergy: "any", activeContext: "any", activeTags: [] },
+    filterState: { activeEnergy: "any", activeContext: "any", activeTags: [], activeDifficulty: "any", activeSkill: "any", sortMode: "deadline" },
     dayMetrics: [],
     weeklyReports: [],
     bossMilestones: [],
@@ -67,6 +73,12 @@ const DEFAULT_SETTINGS: SisyphusSettings = {
     scars: [],
     neuralHubPath: "Active_Run/Neural_Hub.canvas",
     rival: { name: '', avatar: '', personality: 'aggressive' as any, level: 1, xp: 0, xpReq: 100, damageDealt: 0, lastTaunt: '', lastTauntTime: '' },
+    notifications: [],
+    bounties: [],
+    recurringQuests: [],
+    bossRush: { active: false, queue: [], currentIndex: 0, completedCount: 0, totalReward: { xp: 0, gold: 0 } },
+    difficultyStats: { completions: [0, 0, 0, 0, 0], failures: [0, 0, 0, 0, 0], avgCompletionTime: [0, 0, 0, 0, 0], suggestedAdjustment: 0 },
+    theme: 'default',
 }
 
 export default class SisyphusPlugin extends Plugin {
@@ -144,7 +156,7 @@ export default class SisyphusPlugin extends Plugin {
             if (data.xp > 0) floatReward(`+${data.xp} XP`, 'xp');
             if (data.gold > 0) floatReward(`+${data.gold} G`, 'gold');
         });
-        this.kernel.events.on('quest:completed', (data: { questId: string; xpReward: number; goldReward: number }) => {
+        this.kernel.events.on('quest:completed', (data) => {
             showToast({ icon: '⚔️', title: 'Quest Complete!', message: `${data.questId} — +${data.xpReward}XP, +${data.goldReward}G`, variant: 'success' });
             // Achievement check
             AchievementEngine.checkAll(this.settings);
@@ -154,8 +166,22 @@ export default class SisyphusPlugin extends Plugin {
             }
             // Track hourly completion
             this.trackHourlyCompletion();
+            // Difficulty calibration
+            DifficultyCalibrator.trackCompletion(this.settings, data.difficulty || 1, true);
+            // Boss Rush progression
+            if (this.settings.bossRush.active) {
+                BossRushEngine.advanceRush(this.settings, data.xpReward || 0, data.goldReward || 0);
+                this.saveSettings();
+            }
+            // Notification
+            NotificationEngine.push(this.settings, {
+                icon: '⚔️',
+                title: 'Quest Complete',
+                message: `${data.questId} — +${data.xpReward}XP, +${data.goldReward}G`,
+                category: 'combat',
+            });
         });
-        this.kernel.events.on('quest:failed', (data: { questId: string; damage: number }) => {
+        this.kernel.events.on('quest:failed', (data) => {
             if (data.damage > 0) floatReward(`-${data.damage} HP`, 'damage');
             // Rival gains XP on player failure
             if (this.settings.rival?.name) {
@@ -164,6 +190,15 @@ export default class SisyphusPlugin extends Plugin {
             }
             // HP critical vignette
             if (this.settings.hp <= 20) this.showHPVignette();
+            // Difficulty calibration
+            DifficultyCalibrator.trackCompletion(this.settings, 1, false);
+            // Notification
+            NotificationEngine.push(this.settings, {
+                icon: '💀',
+                title: 'Quest Failed',
+                message: `${data.questId} — ${data.damage} HP lost`,
+                category: 'combat',
+            });
         });
 
 
@@ -263,6 +298,31 @@ export default class SisyphusPlugin extends Plugin {
             id: 'quick-capture',
             name: 'Quick Capture (Scrap)',
             callback: () => new QuickCaptureModal(this.app, this).open()
+        });
+        // --- New Engine Commands ---
+        this.addCommand({
+            id: 'command-hub',
+            name: 'Command Hub',
+            callback: () => new CommandHubModal(this.app, this).open()
+        });
+        this.addCommand({
+            id: 'boss-rush-start',
+            name: 'Boss Rush: Start',
+            callback: async () => {
+                const folder = this.app.vault.getAbstractFileByPath('Active_Run/Quests');
+                const files = (folder as any)?.children?.filter((f: any) => f instanceof TFile && f.extension === 'md') ?? [];
+                if (files.length < 3) { new Notice('Need at least 3 active quests for Boss Rush.'); return; }
+                const queueNames = files.slice(0, 5).map((f: TFile) => f.basename);
+                BossRushEngine.startRush(this.settings, queueNames);
+                await this.saveSettings();
+                this.engine.trigger('update');
+                new Notice(`⚔️ BOSS RUSH: ${queueNames.length} quests queued!`);
+            }
+        });
+        this.addCommand({
+            id: 'manage-recurring',
+            name: 'Recurring Quests: Manage',
+            callback: () => new Notice('Recurring quests can be managed in the Panopticon sidebar.')
         });
         this.addCommand({
             id: 'generate-skill-graph',

@@ -1,5 +1,5 @@
 import { TFile } from 'obsidian';
-import { SisyphusSettings, ContextFilter, FilterState, EnergyLevel, QuestContext } from '../types';
+import { SisyphusSettings, ContextFilter, FilterState, EnergyLevel, QuestContext, SortMode } from '../types';
 
 /**
  * DLC 5: Context Filters Engine
@@ -15,21 +15,21 @@ export class FiltersEngine {
     constructor(settings: SisyphusSettings) {
         this.settings = settings;
     }
-  /**
-     * Handle file rename events to preserve filters
-     * @param oldName The previous basename
-     * @param newName The new basename
-     */
+    /**
+       * Handle file rename events to preserve filters
+       * @param oldName The previous basename
+       * @param newName The new basename
+       */
     handleRename(oldName: string, newName: string): void {
         const filterData = this.settings.questFilters[oldName];
-        
+
         if (filterData) {
             // 1. Assign data to new key
             this.settings.questFilters[newName] = filterData;
-            
+
             // 2. Delete old key
             delete this.settings.questFilters[oldName];
-            
+
             console.log(`[Sisyphus] Transferred filters: ${oldName} -> ${newName}`);
         }
     }
@@ -41,14 +41,14 @@ export class FiltersEngine {
     cleanupOrphans(existingFileNames: string[]) {
         const keys = Object.keys(this.settings.questFilters);
         let deleted = 0;
-        
+
         keys.forEach(key => {
             if (!existingFileNames.includes(key)) {
                 delete this.settings.questFilters[key];
                 deleted++;
             }
         });
-        
+
         if (deleted > 0) {
             console.log(`[Sisyphus] Cleaned up ${deleted} orphaned filter entries.`);
         }
@@ -76,11 +76,9 @@ export class FiltersEngine {
      * Update the active filter state
      */
     setFilterState(energy: EnergyLevel | "any", context: QuestContext | "any", tags: string[]): void {
-        this.settings.filterState = {
-            activeEnergy: energy as any,
-            activeContext: context as any,
-            activeTags: tags
-        };
+        this.settings.filterState.activeEnergy = energy as any;
+        this.settings.filterState.activeContext = context as any;
+        this.settings.filterState.activeTags = tags;
     }
 
     /**
@@ -93,29 +91,37 @@ export class FiltersEngine {
     /**
      * Check if a quest matches current filter state
      */
-    questMatchesFilter(questName: string): boolean {
+    questMatchesFilter(questName: string, frontmatter?: any): boolean {
         const filters = this.settings.filterState;
         const questFilter = this.settings.questFilters[questName];
-        
-        // If no filter set for this quest, always show
-        if (!questFilter) return true;
-        
-        // Energy filter
-        if (filters.activeEnergy !== "any" && questFilter.energyLevel !== filters.activeEnergy) {
-            return false;
+
+        // Energy filter (requires questFilter)
+        if (questFilter) {
+            if (filters.activeEnergy !== "any" && questFilter.energyLevel !== filters.activeEnergy) {
+                return false;
+            }
+            if (filters.activeContext !== "any" && questFilter.context !== filters.activeContext) {
+                return false;
+            }
+            if (filters.activeTags.length > 0) {
+                const hasTag = filters.activeTags.some((tag: string) => questFilter.tags.includes(tag));
+                if (!hasTag) return false;
+            }
         }
-        
-        // Context filter
-        if (filters.activeContext !== "any" && questFilter.context !== filters.activeContext) {
-            return false;
+
+        // Difficulty filter (from frontmatter)
+        if (frontmatter && filters.activeDifficulty !== "any") {
+            const diff = frontmatter.diff || frontmatter.difficulty || 1;
+            if (diff !== filters.activeDifficulty) return false;
         }
-        
-        // Tags filter (requires ANY of the active tags)
-        if (filters.activeTags.length > 0) {
-            const hasTag = filters.activeTags.some((tag: string) => questFilter.tags.includes(tag));
-            if (!hasTag) return false;
+
+        // Skill filter (from frontmatter)
+        if (frontmatter && filters.activeSkill !== "any") {
+            const skill = frontmatter.skill || '';
+            const secondary = frontmatter.secondarySkill || '';
+            if (skill !== filters.activeSkill && secondary !== filters.activeSkill) return false;
         }
-        
+
         return true;
     }
 
@@ -170,8 +176,42 @@ export class FiltersEngine {
         this.settings.filterState = {
             activeEnergy: "any",
             activeContext: "any",
-            activeTags: []
+            activeTags: [],
+            activeDifficulty: "any",
+            activeSkill: "any",
+            sortMode: "deadline",
         };
+    }
+
+    toggleDifficultyFilter(diff: number | "any"): void {
+        if (this.settings.filterState.activeDifficulty === diff) {
+            this.settings.filterState.activeDifficulty = "any";
+        } else {
+            this.settings.filterState.activeDifficulty = diff;
+        }
+    }
+
+    toggleSkillFilter(skill: string | "any"): void {
+        if (this.settings.filterState.activeSkill === skill) {
+            this.settings.filterState.activeSkill = "any";
+        } else {
+            this.settings.filterState.activeSkill = skill;
+        }
+    }
+
+    setSortMode(mode: SortMode): void {
+        this.settings.filterState.sortMode = mode;
+    }
+
+    getActiveFilterCount(): number {
+        const f = this.settings.filterState;
+        let count = 0;
+        if (f.activeEnergy !== "any") count++;
+        if (f.activeContext !== "any") count++;
+        if (f.activeDifficulty !== "any") count++;
+        if (f.activeSkill !== "any") count++;
+        if (f.activeTags.length > 0) count++;
+        return count;
     }
 
     /**
@@ -179,12 +219,12 @@ export class FiltersEngine {
      */
     getAvailableTags(): string[] {
         const tags = new Set<string>();
-        
+
         for (const questName in this.settings.questFilters) {
             const filter = this.settings.questFilters[questName];
             (filter.tags || []).forEach((tag: string) => tags.add(tag));
         }
-        
+
         return Array.from(tags).sort();
     }
 
@@ -198,9 +238,9 @@ export class FiltersEngine {
     } {
         const filtered = this.filterQuests(allQuests);
         const activeFiltersCount = (this.settings.filterState.activeEnergy !== "any" ? 1 : 0) +
-                                   (this.settings.filterState.activeContext !== "any" ? 1 : 0) +
-                                   (this.settings.filterState.activeTags.length > 0 ? 1 : 0);
-        
+            (this.settings.filterState.activeContext !== "any" ? 1 : 0) +
+            (this.settings.filterState.activeTags.length > 0 ? 1 : 0);
+
         return {
             total: allQuests.length,
             filtered: filtered.length,

@@ -71,4 +71,17 @@ export class DailyLifecycleModule extends GameModule {
             this.unsubscribeSessionStart = null;
         }
     }
+
+    renderSettings(container: HTMLElement): void {
+        if (!this.kernel) return;
+        const settings = this.kernel.state;
+
+        const section = container.createDiv({ cls: 'sisy-module-settings' });
+        section.createEl('h4', { text: '🌅 Daily Lifecycle Settings' });
+        section.createEl('p', { text: `Last Login: ${settings.lastLogin || 'Never'}`, attr: { style: 'font-size:0.85em; color:var(--text-muted);' } });
+        section.createEl('p', { text: `Run Count: ${settings.runCount}`, attr: { style: 'font-size:0.85em; color:var(--text-muted);' } });
+
+        const rusty = (settings.skills || []).filter((s: any) => s.rust > 0).length;
+        section.createEl('p', { text: `Skills with Rust: ${rusty}/${(settings.skills || []).length}`, attr: { style: 'font-size:0.85em; color:var(--text-muted);' } });
+    }
 }

@@ -560,49 +560,205 @@
 /* ═══════════════════════════════════════
    FILTERS
    ═══════════════════════════════════════ */
-.sisy-filter-bar {
+/* Smart Filter Panel */
+.sisy-filter-panel {
     background: var(--sisy-bg-dim);
     border: 1px solid var(--sisy-border);
-    padding: 10px;
-    border-radius: 6px;
-    margin-bottom: 20px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+
+.sisy-filter-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+}
+
+.sisy-filter-header:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.sisy-filter-header-left,
+.sisy-filter-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sisy-filter-icon {
+    font-size: 1.1em;
+}
+
+.sisy-filter-title {
+    font-weight: 700;
+    font-size: 0.75em;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+}
+
+.sisy-filter-badge {
+    background: var(--sisy-purple);
+    color: white;
+    font-size: 0.65em;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 16px;
+    text-align: center;
+}
+
+.sisy-filter-count {
+    font-family: var(--font-monospace);
+    font-size: 0.75em;
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+
+.sisy-filter-toggle {
+    font-size: 0.6em;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+}
+
+.sisy-filter-body {
+    padding: 8px 14px 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    transition: max-height 0.3s ease, opacity 0.2s ease, padding 0.3s ease;
+    max-height: 500px;
+    overflow: hidden;
+}
+
+.sisy-filter-collapsed {
+    max-height: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    opacity: 0;
+    border-top-color: transparent;
 }
 
 .sisy-filter-row {
     display: flex;
     align-items: center;
     margin-bottom: 8px;
-    font-size: 0.9em;
+    gap: 6px;
 }
 
 .sisy-filter-label {
-    font-weight: bold;
-    margin-right: 10px;
-    min-width: 60px;
+    font-weight: 600;
+    font-size: 0.72em;
     color: var(--text-muted);
+    min-width: 62px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
-.sisy-filter-btn {
-    margin-right: 5px;
-    padding: 3px 8px;
-    border-radius: 3px;
+.sisy-filter-pills {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.sisy-filter-pill {
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 0.72em;
     cursor: pointer;
-    background: transparent;
-    border: 1px solid transparent;
-    opacity: 0.7;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     color: var(--text-muted);
+    transition: all 0.15s;
+    white-space: nowrap;
 }
 
-.sisy-filter-btn:hover {
-    opacity: 1;
-    background: var(--background-modifier-hover);
+.sisy-filter-pill:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: var(--text-normal);
 }
 
-.sisy-filter-active {
-    background: var(--sisy-blue);
+.sisy-filter-pill-active {
+    background: var(--sisy-purple) !important;
+    border-color: var(--sisy-purple) !important;
+    color: white !important;
+    font-weight: 700;
+}
+
+.sisy-filter-star {
+    font-size: 0.65em;
+    letter-spacing: -1px;
+    color: var(--sisy-gold);
+}
+
+.sisy-filter-star.sisy-filter-pill-active {
     color: white;
-    opacity: 1;
-    font-weight: bold;
+}
+
+.sisy-filter-select {
+    flex: 1;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75em;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-normal);
+    cursor: pointer;
+}
+
+.sisy-filter-tag-row {
+    flex-wrap: wrap;
+}
+
+.sisy-filter-chips {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.sisy-filter-chip {
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 0.68em;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: var(--text-muted);
+    transition: all 0.15s;
+}
+
+.sisy-filter-chip:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.sisy-filter-chip-active {
+    background: var(--sisy-blue) !important;
+    border-color: var(--sisy-blue) !important;
+    color: white !important;
+    font-weight: 600;
+}
+
+.sisy-filter-clear {
+    width: 100%;
+    margin-top: 8px;
+    padding: 6px;
+    border-radius: 6px;
+    font-size: 0.72em;
+    font-weight: 700;
+    cursor: pointer;
+    background: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.2);
+    color: var(--sisy-red);
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+}
+
+.sisy-filter-clear:hover {
+    background: rgba(244, 67, 54, 0.2);
+    border-color: var(--sisy-red);
 }
 
 /* ═══════════════════════════════════════
@@ -816,14 +972,252 @@
 }
 
 /* ═══════════════════════════════════════
-   ANALYTICS DASHBOARD (v2.0)
+   ANALYTICS DASHBOARD (v3.0 — Tabbed)
    ═══════════════════════════════════════ */
-.sisy-analytics h4 {
-    margin-top: 15px;
-    color: var(--sisy-blue);
-    font-size: 0.9em;
+.sisy-analytics {
+    margin-bottom: 10px;
 }
 
+.sisy-analytics-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sisy-analytics-tab-btn {
+    flex: 1;
+    padding: 8px 4px;
+    font-size: 0.72em;
+    font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted);
+    transition: all 0.15s;
+    letter-spacing: 0.3px;
+}
+
+.sisy-analytics-tab-btn:hover {
+    color: var(--text-normal);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.sisy-analytics-tab-active {
+    color: var(--sisy-purple) !important;
+    border-bottom-color: var(--sisy-purple) !important;
+    font-weight: 700;
+}
+
+.sisy-analytics-content {
+    min-height: 100px;
+}
+
+.sisy-analytics-subtitle {
+    font-size: 0.72em;
+    font-weight: 700;
+    color: var(--sisy-blue);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 14px 0 8px;
+}
+
+/* Summary Cards (2x2 grid) */
+.sisy-summary-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.sisy-summary-card {
+    background: var(--sisy-bg-glass);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 12px 10px;
+    text-align: center;
+    transition: border-color 0.2s;
+}
+
+.sisy-summary-card:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.sisy-summary-card-icon {
+    font-size: 1.3em;
+    margin-bottom: 4px;
+}
+
+.sisy-summary-card-val {
+    font-size: 1.5em;
+    font-weight: 900;
+    font-family: var(--font-monospace);
+    color: var(--text-normal);
+    line-height: 1.1;
+}
+
+.sisy-summary-card-label {
+    font-size: 0.65em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+}
+
+.sisy-summary-card-sub {
+    font-size: 0.6em;
+    color: var(--text-faint);
+    font-family: var(--font-monospace);
+    margin-top: 2px;
+}
+
+/* Insights Grid */
+.sisy-insights-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.sisy-insights-ring {
+    text-align: center;
+}
+
+.sisy-success-ring {
+    display: block;
+    margin: 0 auto;
+}
+
+.sisy-insights-diff {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Difficulty Breakdown */
+.sisy-diff-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sisy-diff-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72em;
+}
+
+.sisy-diff-bar-label {
+    min-width: 50px;
+    text-align: right;
+    color: var(--sisy-gold);
+    font-size: 0.85em;
+}
+
+.sisy-diff-bar-bg {
+    flex: 1;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.sisy-diff-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s ease;
+}
+
+.sisy-diff-bar-pct {
+    min-width: 28px;
+    text-align: right;
+    font-weight: 700;
+    font-family: var(--font-monospace);
+    color: var(--text-normal);
+}
+
+.sisy-diff-bar-count {
+    min-width: 38px;
+    font-size: 0.85em;
+    color: var(--text-muted);
+}
+
+/* Calibration Banners */
+.sisy-calibration-banner {
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 0.78em;
+    margin: 10px 0;
+    font-weight: 600;
+}
+
+.sisy-calibration-up {
+    background: rgba(76, 175, 80, 0.1);
+    border: 1px solid rgba(76, 175, 80, 0.2);
+    color: var(--sisy-green);
+}
+
+.sisy-calibration-down {
+    background: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.2);
+    color: var(--sisy-red);
+}
+
+/* Top Skills */
+.sisy-top-skills {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sisy-top-skill-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: var(--sisy-bg-dim);
+    border-radius: 6px;
+    font-size: 0.75em;
+}
+
+.sisy-top-skill-rank {
+    font-weight: 800;
+    color: var(--sisy-gold);
+    min-width: 20px;
+    font-family: var(--font-monospace);
+}
+
+.sisy-top-skill-name {
+    flex: 1;
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+.sisy-top-skill-level {
+    font-family: var(--font-monospace);
+    color: var(--sisy-blue);
+    font-weight: 700;
+    min-width: 32px;
+    text-align: right;
+}
+
+.sisy-top-skill-bar {
+    width: 40px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.sisy-top-skill-fill {
+    height: 100%;
+    background: var(--sisy-purple);
+    border-radius: 2px;
+    transition: width 0.5s;
+}
+
+/* Chart containers (kept from v2) */
 .sisy-chart-svg {
     background: var(--sisy-bg-dim);
     border-radius: 6px;
@@ -915,7 +1309,8 @@
     font-size: 0.8em;
     padding: 8px;
     background: var(--sisy-bg-dim);
-    border-radius: 4px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .sisy-week-compare-label {
@@ -1797,4 +2192,447 @@
     50% {
         opacity: 1;
     }
+}
+
+/* ============================================================
+   SISYPHUS v5.0 — NEW FEATURE STYLES
+   Command Hub, Bounty Board, Boss Rush, Notifications,
+   Skill Decay, Module Settings, Themes.
+   ============================================================ */
+
+/* --- Command Hub Modal --- */
+.sisy-command-hub {
+    padding: 20px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.sisy-hub-header h2 {
+    margin: 0 0 4px 0;
+    font-size: 1.3em;
+    color: var(--sisy-gold);
+    letter-spacing: 2px;
+}
+
+.sisy-hub-subtitle {
+    font-size: 0.85em;
+    opacity: 0.6;
+    margin-bottom: 16px;
+}
+
+.sisy-hub-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.sisy-hub-cat-title {
+    font-size: 0.9em;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+    color: var(--sisy-purple);
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(170, 100, 255, 0.2);
+}
+
+.sisy-hub-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+}
+
+.sisy-hub-card {
+    background: var(--sisy-bg-dim);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.sisy-hub-card:hover {
+    background: rgba(170, 100, 255, 0.1);
+    border-color: var(--sisy-purple);
+    transform: translateY(-1px);
+}
+
+.sisy-hub-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.sisy-hub-card-icon {
+    font-size: 1.3em;
+}
+
+.sisy-hub-card-hotkey {
+    font-size: 0.65em;
+    opacity: 0.5;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-family: monospace;
+}
+
+.sisy-hub-card-label {
+    font-size: 0.85em;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.sisy-hub-card-desc {
+    font-size: 0.7em;
+    opacity: 0.5;
+    line-height: 1.3;
+}
+
+/* --- Bounty Board --- */
+.sisy-bounty-card {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.05), rgba(255, 87, 34, 0.05));
+    border: 1px solid rgba(255, 193, 7, 0.15);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    transition: border-color 0.2s;
+}
+
+.sisy-bounty-card:hover {
+    border-color: var(--sisy-gold);
+}
+
+.sisy-bounty-mult {
+    background: var(--sisy-gold);
+    color: #000;
+    font-size: 0.75em;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.sisy-bounty-desc {
+    font-size: 0.85em;
+    opacity: 0.8;
+    margin: 6px 0;
+}
+
+.sisy-bounty-reason {
+    font-size: 0.75em;
+    opacity: 0.5;
+    font-style: italic;
+    margin-bottom: 8px;
+}
+
+/* --- Boss Rush Panel --- */
+.sisy-boss-rush-panel {
+    background: linear-gradient(135deg, rgba(255, 85, 85, 0.08), rgba(170, 100, 255, 0.05));
+    border: 1px solid rgba(255, 85, 85, 0.2);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+}
+
+.sisy-rush-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: var(--sisy-red);
+    letter-spacing: 1px;
+}
+
+.sisy-rush-queue {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.sisy-rush-item {
+    font-size: 0.85em;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.sisy-rush-active {
+    background: rgba(255, 85, 85, 0.15);
+    border-left: 3px solid var(--sisy-red);
+    font-weight: bold;
+}
+
+.sisy-rush-done {
+    opacity: 0.5;
+    text-decoration: line-through;
+}
+
+/* --- Notification Center --- */
+.sisy-notification-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sisy-notif-toolbar {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-bottom: 6px;
+}
+
+.sisy-notif-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.02);
+    transition: background 0.15s;
+}
+
+.sisy-notif-unread {
+    background: rgba(170, 100, 255, 0.06);
+    border-left: 2px solid var(--sisy-purple);
+}
+
+.sisy-notif-icon {
+    font-size: 1.2em;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.sisy-notif-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.sisy-notif-title {
+    font-size: 0.85em;
+    font-weight: bold;
+}
+
+.sisy-notif-message {
+    font-size: 0.75em;
+    opacity: 0.7;
+    line-height: 1.3;
+}
+
+.sisy-notif-time {
+    font-size: 0.7em;
+    opacity: 0.4;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.sisy-notif-badge {
+    background: var(--sisy-red);
+    color: #fff;
+    font-size: 0.6em;
+    font-weight: bold;
+    padding: 1px 5px;
+    border-radius: 10px;
+    min-width: 14px;
+    text-align: center;
+    margin-left: 4px;
+}
+
+/* --- Skill Decay Visualization --- */
+.sisy-skill-node.sisy-rust-mild {
+    position: relative;
+}
+
+.sisy-skill-node.sisy-rust-mild::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgba(255, 200, 0, 0.06);
+    pointer-events: none;
+    border: 1px solid rgba(255, 200, 0, 0.15);
+}
+
+.sisy-skill-node.sisy-rust-medium {
+    position: relative;
+}
+
+.sisy-skill-node.sisy-rust-medium::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgba(255, 140, 0, 0.1);
+    pointer-events: none;
+    border: 1px solid rgba(255, 140, 0, 0.25);
+    animation: rust-pulse 3s infinite ease-in-out;
+}
+
+.sisy-skill-node.sisy-rust-severe {
+    position: relative;
+    filter: grayscale(30%);
+}
+
+.sisy-skill-node.sisy-rust-severe::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgba(255, 60, 60, 0.12);
+    pointer-events: none;
+    border: 1px solid rgba(255, 60, 60, 0.3);
+    animation: rust-pulse 2s infinite ease-in-out;
+}
+
+@keyframes rust-pulse {
+
+    0%,
+    100% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+.sisy-skill-rust-bar {
+    width: 100%;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 2px;
+    margin: 6px 0 2px;
+    overflow: hidden;
+}
+
+.sisy-skill-rust-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--sisy-gold), var(--sisy-red));
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.sisy-skill-idle-label {
+    font-size: 0.65em;
+    opacity: 0.4;
+    text-align: right;
+    margin-top: 2px;
+}
+
+/* --- Module Settings --- */
+.sisy-module-settings {
+    margin: 8px 0 16px 0;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    border-left: 3px solid var(--sisy-purple);
+}
+
+.sisy-module-settings h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+/* ============================================================
+   THEMES SYSTEM
+   Applied via class on the Panopticon container element.
+   ============================================================ */
+
+/* Cyberpunk Theme */
+.sisy-theme-cyberpunk {
+    --sisy-purple: #ff00ff;
+    --sisy-red: #ff0040;
+    --sisy-green: #00ff9f;
+    --sisy-green-dim: #00cc7f;
+    --sisy-blue: #00f0ff;
+    --sisy-gold: #ffcc00;
+    --sisy-bg-dim: rgba(0, 255, 255, 0.03);
+    --sisy-bg-glass: rgba(10, 0, 30, 0.8);
+}
+
+.sisy-theme-cyberpunk .sisy-hud .sisy-stat-val {
+    text-shadow: 0 0 8px currentColor;
+}
+
+.sisy-theme-cyberpunk .sisy-bar-fill {
+    box-shadow: 0 0 6px currentColor;
+}
+
+.sisy-theme-cyberpunk .sisy-quest-card {
+    border-color: rgba(0, 240, 255, 0.15);
+}
+
+/* Dark Souls Theme */
+.sisy-theme-dark-souls {
+    --sisy-purple: #8b7355;
+    --sisy-red: #8b0000;
+    --sisy-green: #556b2f;
+    --sisy-green-dim: #4a5f28;
+    --sisy-blue: #4682b4;
+    --sisy-gold: #c9a83e;
+    --sisy-bg-dim: rgba(139, 115, 85, 0.04);
+    --sisy-bg-glass: rgba(15, 12, 8, 0.85);
+}
+
+.sisy-theme-dark-souls .sisy-quest-card {
+    border-color: rgba(139, 115, 85, 0.2);
+    background: rgba(20, 15, 10, 0.6);
+}
+
+.sisy-theme-dark-souls .sisy-bar-fill {
+    border-radius: 0;
+}
+
+/* Minimal Theme */
+.sisy-theme-minimal {
+    --sisy-purple: #888;
+    --sisy-red: #666;
+    --sisy-green: #999;
+    --sisy-green-dim: #777;
+    --sisy-blue: #aaa;
+    --sisy-gold: #bbb;
+    --sisy-bg-dim: rgba(255, 255, 255, 0.02);
+    --sisy-bg-glass: rgba(25, 25, 25, 0.7);
+}
+
+.sisy-theme-minimal .sisy-stat-val,
+.sisy-theme-minimal .sisy-stat-label {
+    text-shadow: none;
+}
+
+.sisy-theme-minimal .sisy-quest-card {
+    border-radius: 2px;
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Terminal Theme */
+.sisy-theme-terminal {
+    --sisy-purple: #33ff33;
+    --sisy-red: #ff3333;
+    --sisy-green: #33ff33;
+    --sisy-green-dim: #22cc22;
+    --sisy-blue: #33ccff;
+    --sisy-gold: #ffff33;
+    --sisy-bg-dim: rgba(0, 255, 0, 0.02);
+    --sisy-bg-glass: rgba(0, 10, 0, 0.9);
+}
+
+.sisy-theme-terminal * {
+    font-family: 'Courier New', 'Fira Code', monospace !important;
+}
+
+.sisy-theme-terminal .sisy-stat-val {
+    text-shadow: 0 0 4px #33ff33;
+}
+
+.sisy-theme-terminal .sisy-quest-card {
+    border-color: rgba(51, 255, 51, 0.15);
+    border-radius: 0;
+}
+
+.sisy-theme-terminal .sisy-bar-fill {
+    border-radius: 0;
+    box-shadow: 0 0 4px #33ff33;
 }

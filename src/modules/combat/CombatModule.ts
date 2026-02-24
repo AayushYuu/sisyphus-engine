@@ -38,4 +38,16 @@ export class CombatModule extends GameModule {
             this.unsubscribeQuestCompleted = null;
         }
     }
+
+    renderSettings(container: HTMLElement): void {
+        if (!this.kernel) return;
+        const settings = this.kernel.state;
+
+        const section = container.createDiv({ cls: 'sisy-module-settings' });
+        section.createEl('h4', { text: '⚔️ Combat Settings' });
+
+        const rival = settings.rival;
+        section.createEl('p', { text: `Rival: ${rival?.name || 'Unknown'} (Lvl ${rival?.level || 1}) — ${rival?.personality || 'aggressive'}`, attr: { style: 'font-size:0.85em; color:var(--text-muted);' } });
+        section.createEl('p', { text: `Rival Damage: ${settings.rivalDmg} HP/cycle`, attr: { style: 'font-size:0.85em; color:var(--text-muted);' } });
+    }
 }

@@ -46,16 +46,33 @@ export class SkillTreeRenderer {
             fill.style.width = `${pct}%`;
             barWrap.createDiv({ text: `${skill.xp}/${skill.xpReq} XP`, cls: 'sisy-skill-xp-label' });
 
-            // Rust indicator
+            // Rust / Skill Decay visualization
             if (skill.rust > 0) {
-                const rust = node.createDiv({ cls: 'sisy-skill-rust' });
-                rust.textContent = `⚠️ RUST ${skill.rust}`;
-            }
+                // Graduated decay visual classes
+                if (skill.rust >= 7) {
+                    node.addClass('sisy-rust-severe');
+                } else if (skill.rust >= 4) {
+                    node.addClass('sisy-rust-medium');
+                } else {
+                    node.addClass('sisy-rust-mild');
+                }
 
-            // Connections indicator
-            if (skill.connections && skill.connections.length > 0) {
-                const conn = node.createDiv({ cls: 'sisy-skill-connections' });
-                conn.textContent = `🔗 ${skill.connections.join(', ')}`;
+                const rustBar = node.createDiv({ cls: 'sisy-skill-rust-bar' });
+                const rustPct = Math.min((skill.rust / 10) * 100, 100);
+                const rustFill = rustBar.createDiv({ cls: 'sisy-skill-rust-fill' });
+                rustFill.style.width = `${rustPct}%`;
+
+                const rustLabel = node.createDiv({ cls: 'sisy-skill-rust' });
+                const severity = skill.rust >= 7 ? '🔴 CRITICAL' : skill.rust >= 4 ? '🟠 DECAYING' : '🟡 FADING';
+                rustLabel.textContent = `${severity} — Rust ${skill.rust}/10`;
+
+                // Days since last use
+                if (skill.lastUsed) {
+                    const days = Math.floor((Date.now() - new Date(skill.lastUsed).getTime()) / 86400000);
+                    if (days > 0) {
+                        node.createDiv({ text: `${days}d idle`, cls: 'sisy-skill-idle-label' });
+                    }
+                }
             }
         });
 
